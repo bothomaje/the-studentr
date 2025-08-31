@@ -3,7 +3,7 @@
 Explains the purpose and responsibilities of each deliverable required for the Data Modeling stage under the local-user-only scope. Focuses on definitions, acceptance criteria, and verification steps.
 
 ## Reference Diagrams
-![ERD](docs/diagrams/erd.svg)
+![ERD](../diagrams/erd.svg)
 
 ## Deliverables
 ### db/schema.sql - Formal Database Contract
