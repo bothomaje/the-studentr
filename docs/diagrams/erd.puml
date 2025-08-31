@@ -1,0 +1,62 @@
+@startuml erd
+skinparam linetype ortho
+left to right direction
+
+entity "USERS" as users {
+    * user_id : CHAR(36) CHARACTER SET ascii <<PK>>
+    --
+    * username : VARCHAR(100) <<UNIQUE>>
+    * email : VARCHAR(255) <<UNIQUE>>
+    * password_hash : VARBINARY(255)
+    * first_name : VARCHAR(100)
+    * surname : VARCHAR(100)
+    * created_at : TIMESTAMP <<DEFAULT CURRENT_TIMESTAMP>>
+    updated_at : TIMESTAMP <<DEFAULT CURRENT_TIMESTAMP ON UPDATE>>
+}
+
+entity "MODULES" as modules {
+    * module_id : CHAR(36) CHARACTER SET ascii <<PK>>
+    * user_id : CHAR(36) CHARACTER SET ascii <<FK users.user_id>>
+    --
+    * module_code : VARCHAR(16) <<UNIQUE(user_id, module_code)>>
+    * module_name : VARCHAR(100)
+    * year_mark_weight : DECIMAL(5,2) <<CHECK 0..100>>
+    * exam_weight : DECIMAL(5,2) <<CHECK 0..100>>
+    * min_assignments : INT <<DEFAULT 1, CHECK >=0>>
+    min_year_mark : DECIMAL(5,2) <<CHECK 0..100>>
+    exam_subminimum : DECIMAL(5,2) <<CHECK 0..100>>
+    * created_at : TIMESTAMP <<DEFAULT CURRENT_TIMESTAMP>>
+    updated_at : TIMESTAMP <<DEFAULT CURRENT_TIMESTAMP ON UPDATE>>
+}
+
+entity "ASSIGNMENTS" as assignments {
+    * assignment_id : CHAR(36) CHARACTER SET ascii <<PK>>
+    * module_id : CHAR(36) CHARACTER SET ascii <<FK modules.module_id>>
+    --
+    * category : ENUM('Formative','Exam')
+    * assignment_type: ENUM('Quiz','Written assignment','Practical','Written exam','Take-Home exam')
+    * assignment_title : VARCHAR(120)
+    start_date : DATE
+    * due_date : DATE
+    * due_time : TIME <<DEFAULT '23:59:00'>>
+    submit_date : DATE
+    status : ENUM('Not Started','In Progress','Done','Skipped') <<DEFAULT 'Not Started'>>
+    * created_at : TIMESTAMP <<DEFAULT CURRENT_TIMESTAMP>>
+    updated_at : TIMESTAMP <<DEFAULT CURRENT_TIMESTAMP ON UPDATE>>
+}
+
+entity "MARKS" as marks {
+    * mark_id : CHAR(36) CHARACTER SET ascii <<PK>>
+    * assignment_id : CHAR(36) CHARACTER SET ascii <<FK assignments.assignment_id, UNIQUE>>
+    --
+    * weight : DECIMAL(5,2) <<CHECK 0..100>>
+    score : DECIMAL(5,2) <<CHECK 0..100>>
+    * created_at : TIMESTAMP <<DEFAULT CURRENT_TIMESTAMP>>
+    updated_at : TIMESTAMP <<DEFAULT CURRENT_TIMESTAMP ON UPDATE>>
+}
+
+users ||--o{ modules
+modules ||--o{ assignments
+assignments ||--o| marks
+
+@enduml
