@@ -3,7 +3,7 @@ name: Render PlantUML
 on:
   push:
     paths:
-      - 'docs/diagrams/*.puml'
+      - 'docs/diagrams/**/*.puml'
       - '.github/workflows/plantuml.yml'
   workflow_dispatch:
 
