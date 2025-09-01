@@ -15,10 +15,10 @@ Explains the purpose and responsibilities of each deliverable required for the D
 - Serves as the single source of truth for seed, DAL, and UI layers.
 
 #### Acceptance Criteria
-- [ ] ERD and schema match exactly; no orphan records possible.
-- [ ] Constraints prevent invalid states (invalid status, missing FKs, negative weights).
-- [ ] Creation is idempotent and safe to re-apply on an empty DB.
-- [ ] Numeric types support calculations and sorting correctly (e.g., DECIMAL for percentages).
+- [x] ERD and schema match exactly; no orphan records possible.
+- [x] Constraints prevent invalid states (invalid status, missing FKs, negative weights).
+- [x] Creation is idempotent and safe to re-apply on an empty DB.
+- [x] Numeric types support calculations and sorting correctly (e.g., DECIMAL for percentages).
 
 ### db/seed.sql - Baseline Data for Local Use
 - Introduces a single local user profile (email NULL) to own all data.
