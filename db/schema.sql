@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS MODULES (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (module_id),
   FOREIGN KEY (user_id) REFERENCES USERS(user_id) ON UPDATE CASCADE,
-  UNIQUE(user_id, module_code)
+  CONSTRAINT user_module UNIQUE (user_id, module_code)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS  ASSIGNMENTS (
@@ -59,3 +59,7 @@ CREATE TABLE IF NOT EXISTS MARKS (
   PRIMARY KEY (mark_id),
   FOREIGN KEY (assignment_id) REFERENCES ASSIGNMENTS(assignment_id) ON UPDATE CASCADE
 ) ENGINE = InnoDB;
+
+CREATE INDEX users_modules ON MODULES(user_id);
+CREATE INDEX by_due_date ON ASSIGNMENTS(module_id, due_date);
+CREATE INDEX type_by_due_date ON ASSIGNMENTS(module_id, category, due_date);
