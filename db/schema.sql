@@ -60,6 +60,6 @@ CREATE TABLE IF NOT EXISTS MARKS (
   FOREIGN KEY (assignment_id) REFERENCES ASSIGNMENTS(assignment_id) ON UPDATE CASCADE
 ) ENGINE = InnoDB;
 
-CREATE INDEX users_modules ON MODULES(user_id);
-CREATE INDEX by_due_date ON ASSIGNMENTS(module_id, due_date);
-CREATE INDEX type_by_due_date ON ASSIGNMENTS(module_id, category, due_date);
+CREATE INDEX idx_modules_user ON MODULES(user_id);
+CREATE INDEX idx_asg_module_due ON ASSIGNMENTS(module_id, due_date);
+CREATE INDEX idx_asg_module_cat_due ON ASSIGNMENTS(module_id, category, due_date);
