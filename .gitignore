@@ -1,2 +1,2 @@
 .DS_Store
-db/seed.sql
+db/local_*.sql
