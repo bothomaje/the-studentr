@@ -1,0 +1,56 @@
+name: DB Validate
+on:
+  push:
+    paths:
+      - 'db/schema.sql'
+      - 'db/seed.sql'
+      - '.github/workflows/db-validate.yml'
+  pull_request:
+    paths:
+      - 'db/schema.sql'
+      - 'db/seed.sql'
+
+jobs:
+  mysql:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:9.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..60}; do
+            mysqladmin ping -h127.0.0.1 -proot && break
+            sleep 1
+          done
+
+      - name: Create DB
+        run: |
+          mysql -h127.0.0.1 -uroot -proot -e \
+            "CREATE DATABASE IF NOT EXISTS the_studentr
+             DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_0900_ai_ci;"
+
+      - name: Apply schema
+        run: |
+          mysql -h127.0.0.1 -uroot -proot the_studentr < db/schema.sql
+
+      - name: Apply seed
+        if: hashFiles('db/seed.sql') != ''
+        run: |
+          mysql -h127.0.0.1 -uroot -proot the_studentr < db/seed.sql
+
+      - name: Sanity queries
+        run: |
+          mysql -h127.0.0.1 -uroot -proot -D the_studentr -e "SHOW TABLES;"
+          mysql -h127.0.0.1 -uroot -proot -D the_studentr -e "SHOW CREATE TABLE assignments\G"
