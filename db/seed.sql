@@ -14,7 +14,7 @@ VALUES
 ON DUPLICATE KEY UPDATE module_name = new.module_name;
 
 -- Insert assignments for COS2611 into ASSIGNMENTS table
-INSERT INTO ASSIGNMENTS (assignment_id, module_id, category, assignment_type, assignment_title, start_date, due_time, submit_date, status)
+INSERT INTO ASSIGNMENTS (assignment_id, module_id, category, assignment_type, assignment_title, start_date, due_date, submit_date, status)
 VALUES
 ('200000000000000000000000000000000101', '100000000000000000000000000000000101', 'Formative', 'Practical', 'Project 1', '2025-02-01', '2025-05-01', '2025-04-12', 'Done'),
 ('200000000000000000000000000000000102', '100000000000000000000000000000000101', 'Formative', 'Practical', 'Project 2', '2025-05-01', '2025-07-30', '2025-07-29', 'Done'),
