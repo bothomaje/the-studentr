@@ -1,12 +1,12 @@
 USE the_studentr;
 START TRANSACTION;
 
---Insert test user into USERS table
+-- Insert test user into USERS table
 INSERT INTO USERS (user_id, username, email, password_hash, first_name, surname)
 VALUES ('000000000000000000000000000000000001', 'testuser1', 'testuser1@mail.com', '', 'Test', 'One') AS new
 ON DUPLICATE KEY UPDATE email = new.email;
 
---Insert COS2611 and INF2611 modules into MODULES table
+-- Insert COS2611 and INF2611 modules into MODULES table
 INSERT INTO MODULES (module_id, user_id, module_code, module_name, year_mark_weight, exam_weight, min_assignments)
 VALUES
 ('100000000000000000000000000000000101', '000000000000000000000000000000000001', 'COS2611', 'Programming: Data Structures', 20, 80, 1),
