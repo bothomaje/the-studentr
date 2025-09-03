@@ -53,4 +53,8 @@ jobs:
       - name: Sanity queries
         run: |
           mysql -h127.0.0.1 -uroot -proot -D the_studentr -e "SHOW TABLES;"
-          mysql -h127.0.0.1 -uroot -proot -D the_studentr -e "SHOW CREATE TABLE ASSIGNMENTS\G"
+          mysql -h127.0.0.1 -uroot -proot -D the_studentr -e "SHOW CREATE TABLE ASSIGNMENTS;"
+          mysql -h127.0.0.1 -uroot -proot -D the_studentr -e "SELECT * FROM USERS;"
+          mysql -h127.0.0.1 -uroot -proot -D the_studentr -e "SELECT * FROM MODULES;"
+          mysql -h127.0.0.1 -uroot -proot -D the_studentr -e "SELECT * FROM ASSIGNMENTS;"
+          mysql -h127.0.0.1 -uroot -proot -D the_studentr -e "SELECT * FROM MARKS;"
