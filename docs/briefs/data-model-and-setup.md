@@ -27,9 +27,9 @@ Explains the purpose and responsibilities of each deliverable required for the D
 - Designed to be safe to run once; documented to avoid duplicate application.
 
 #### Acceptance Criteria
-- [ ] After seeding, the app can load main screens without manual input.
-- [ ] Seeded data respects schema constraints and valid foreign keys.
-- [ ] Dataset is small, purposeful, and well-documented.
+- [x] After seeding, the app can load main screens without manual input.
+- [x] Seeded data respects schema constraints and valid foreign keys.
+- [x] Dataset is small, purposeful, and well-documented.
 
 ### scripts/setup_db.py - One-Button Environment Setup
 - Automates applying schema then seed in the correct order; optional database creation if needed.
@@ -38,9 +38,9 @@ Explains the purpose and responsibilities of each deliverable required for the D
 - Handles errors gracefully and exits non-zero on failure.
 
 #### Acceptance Criteria
-- [ ] Running on a clean machine produces a ready-to-use database matching the schema and seed.
-- [ ] Repeat runs do not corrupt data; behaviour is predictable and documented.
-- [ ] Output enables verification without reading the source code.
+- [x] Running on a clean machine produces a ready-to-use database matching the schema and seed.
+- [x] Repeat runs do not corrupt data; behaviour is predictable and documented.
+- [x] Output enables verification without reading the source code.
 
 ### app/dal/db.py - Connection and Query Infrastructure
 - Centralizes connection handling so UI modules don’t duplicate boilerplate.
