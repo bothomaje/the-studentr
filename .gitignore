@@ -1,5 +1,13 @@
-.DS_Store
-db/local_*.sql
+# environments and secrets
 .env
 .env.*
 !.env.example
+
+# python caches
+__pycache__/
+
+# OS extras
+.DS_Store
+
+# Local-only
+db/local_*.sql

@@ -47,4 +47,4 @@ jobs:
         run: pip install mysqlclient
 
       - name: Setup DB
-        run: python scripts/setup_db.py
+        run: python -m scripts/setup_db.py
