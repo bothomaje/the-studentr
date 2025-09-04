@@ -9,7 +9,11 @@ def run_sql_file(cur, path: Path):
 
     for statement in (s.strip() for s in sql_text.split(";")):
         if statement:
-            cur.execute(statement + ";")
+            try:
+                cur.execute(statement + ";")
+            except MySQLdb.OperationalError as e:
+                continue
+                raise
 
 # setup db main function
 def main():
