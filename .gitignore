@@ -1,2 +1,5 @@
 .DS_Store
 db/local_*.sql
+.env
+.env.*
+!.env.example
