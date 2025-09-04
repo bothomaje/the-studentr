@@ -62,7 +62,14 @@ CREATE TABLE IF NOT EXISTS MARKS (
   FOREIGN KEY (assignment_id) REFERENCES ASSIGNMENTS(assignment_id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB;
 
+ALTER TABLE MODULES DROP INDEX IF EXISTS idx_modules_user;
 CREATE INDEX idx_modules_user ON MODULES(user_id);
+
+ALTER TABLE ASSIGNMENTS DROP INDEX IF EXISTS idx_asg_module_due;
 CREATE INDEX idx_asg_module_due ON ASSIGNMENTS(module_id, due_date);
+
+ALTER TABLE ASSIGNMENTS DROP INDEX IF EXISTS idx_asg_module_cat_due;
 CREATE INDEX idx_asg_module_cat_due ON ASSIGNMENTS(module_id, category, due_date);
+
+ALTER TABLE ASSIGNMENTS DROP INDEX IF EXISTS idx_asg_module_status;
 CREATE INDEX idx_asg_module_status ON ASSIGNMENTS(module_id, status);
