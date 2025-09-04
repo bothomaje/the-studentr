@@ -28,7 +28,13 @@ def main():
     seed = Path("db/seed.sql")
 
     # apply schema.sql
-    run_sql_file(cur, schema)
+    if schema.exists():
+        try:
+            run_sql_file(cur, schema)
+            conn.commit()
+        except:
+            conn.rollback()
+            raise
 
     # apply seed.sql
     if seed.exists():
