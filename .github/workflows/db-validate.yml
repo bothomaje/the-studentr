@@ -58,3 +58,6 @@ jobs:
 
       - name: Setup DB
         run: python -m scripts.setup_db
+
+      - name: DAL smoke
+        run: python -m scripts.dal_smoke
