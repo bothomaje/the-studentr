@@ -61,3 +61,12 @@ jobs:
 
       - name: DAL smoke
         run: python -m scripts.dal_smoke
+
+      - name: Users DAL smoke
+        run: |
+          python - <<'PY'
+          from app.dal.users_dal import get_user_by_username
+          email = get_user_by_username("testuser1")["email"]
+          print(email)
+          PY
+          
