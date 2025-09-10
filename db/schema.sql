@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS MODULES (
   module_name VARCHAR(100) NOT NULL,
   year_mark_weight DECIMAL(5,2) CHECK (year_mark_weight >= 0 AND year_mark_weight <= 100) NOT NULL,
   exam_weight DECIMAL(5,2) CHECK (exam_weight >= 0 AND exam_weight <= 100) NOT NULL,
-  min_assignments INT NOT NULL DEFAULT 1 CHECK (min_assignments >=0),
+  min_assignments INT NOT NULL DEFAULT 1 CHECK (min_assignments > 0),
   min_year_mark DECIMAL(5,2) CHECK (min_year_mark >= 0 AND min_year_mark <= 100),
   exam_subminimum DECIMAL(5,2) CHECK (exam_subminimum >= 0 AND exam_subminimum <= 100),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
