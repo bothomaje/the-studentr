@@ -25,6 +25,8 @@ jobs:
       yaml_files: ${{ steps.filter.outputs.yaml_files }}
       yaml_changed: ${{ steps.filter.outputs.yaml }}
       sh_files: ${{ steps.filter.outputs.sh_files }}
+      sql_changed: ${{ steps.filter.outputs.sql }}
+      sql_files: ${{ steps.filter.outputs.sql_files }}
     steps:
       - uses: actions/checkout@v4
 
@@ -62,17 +64,22 @@ jobs:
               - '**/*.y?(a)ml'
             sh:
               - '**/*.sh'
+            sql:
+              - 'db/**/*.sql'
+              - 'scripts/**/*.sql'
 
       - name: Summary
         env:
-          PY_CHANGED:   ${{ steps.filter.outputs.py }}
-          DB_CHANGED:   ${{ steps.filter.outputs.db }}
-          UML_CHANGED:  ${{ steps.filter.outputs.uml }}
-          UI_CHANGED:   ${{ steps.filter.outputs.ui }}
+          PY_CHANGED: ${{ steps.filter.outputs.py }}
+          DB_CHANGED: ${{ steps.filter.outputs.db }}
+          UML_CHANGED: ${{ steps.filter.outputs.uml }}
+          UI_CHANGED: ${{ steps.filter.outputs.ui }}
           YAML_CHANGED: ${{ steps.filter.outputs.yaml }}
-          PY_FILES:     ${{ steps.filter.outputs.py_files }}
-          YAML_FILES:   ${{ steps.filter.outputs.yaml_files }}
-          SH_FILES:     ${{ steps.filter.outputs.sh_files }}
+          PY_FILES: ${{ steps.filter.outputs.py_files }}
+          YAML_FILES: ${{ steps.filter.outputs.yaml_files }}
+          SH_FILES: ${{ steps.filter.outputs.sh_files }}
+          SQL_CHANGED: ${{ steps.filter.outputs.sql }}
+          SQL_FILES: ${{ steps.filter.outputs.sql_files }}
         run: |
           {
             printf '%s\n' '## Change detection' ''
@@ -81,6 +88,7 @@ jobs:
             printf '%s\n' "- UML changed: **$UML_CHANGED**"
             printf '%s\n' "- UI/Logic changed: **$UI_CHANGED**"
             printf '%s\n' "- YAML changed: **$YAML_CHANGED**"
+            printf '%s\n' "- SQL changed: **$SQL_CHANGED**"
             printf '%s\n' ''
             printf '%s\n' '<details><summary>Changed Python files</summary>' ''
             echo "$PY_FILES" | jq -r '.[]?'
@@ -90,6 +98,9 @@ jobs:
             printf '%s\n' '</details>'
             printf '%s\n' '<details><summary>Changed Shell scripts</summary>' ''
             echo "$SH_FILES" | jq -r '.[]?'
+            printf '%s\n' '</details>'
+            printf '%s\n' '<details><summary>Changed SQL files</summary>' ''
+            echo "$SQL_FILES" | jq -r '.[]?'
             printf '%s\n' '</details>'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -117,6 +128,7 @@ jobs:
           pip install ruff==0.6.*
           sudo apt-get update
           sudo apt-get install -y yamllint shellcheck jq
+          pip install "sqlfluff==3.*"
 
       - name: Lint baseline cache
         id: lintcache
@@ -198,6 +210,44 @@ jobs:
               print("No changed shell scripts")
           PY
 
+      - name: Ensure .sqlfluff (mysql)
+        run: |
+          if [ ! -f .sqlfluff ]; then
+            printf '%s\n' '[sqlfluff]' 'dialect = mysql' \
+              'max_line_length = 100' > .sqlfluff
+          fi
+
+      - name: SQLFluff (full)
+        if: steps.scope.outputs.first_run == 'true'
+        run: |
+          sqlfluff lint db scripts \
+            --format json --write-output sqlfluff.json || true
+          VIOL=$(jq 'map(.violations|length)|add // 0' sqlfluff.json)
+          echo "VIOL=$VIOL" >> $GITHUB_ENV
+          test "$VIOL" -eq 0
+
+      - name: SQLFluff (changed)
+        if: >-
+          steps.scope.outputs.first_run != 'true' &&
+          needs.detect.outputs.sql_changed == 'true'
+        env:
+          SQL_FILES: ${{ needs.detect.outputs.sql_files }}
+        run: |
+          python - <<'PY'
+          import json, os, subprocess, sys
+          files = json.loads(os.environ.get("SQL_FILES","[]"))
+          if files:
+              # Lint only changed SQL files
+              cmd = ["sqlfluff","lint","--format","json",
+                "--write-output","sqlfluff.json",*files]
+              rc = subprocess.call(cmd)
+              sys.exit(0 if rc in (0,1) else rc)
+          PY
+          VIOL=$(jq 'map(.violations|length)|add // 0' \
+            sqlfluff.json 2>/dev/null || echo 0)
+          echo "VIOL=$VIOL" >> $GITHUB_ENV
+          test "$VIOL" -eq 0
+
       - name: Mark baseline
         if: steps.scope.outputs.first_run == 'true'
         run: echo "ok" > .cache/lint-baseline/marker
@@ -207,6 +257,14 @@ jobs:
         run: |
           {
             printf '### Lint finished: **%s**\n' "${{ job.status }}"
+            printf '### SQLFluff result: **%s**\n' "${{ job.status }}"
+            printf 'Violations: %s\n' "${VIOL:-0}"
+            if [ -f sqlfluff.json ]; then
+              printf '\n<details><summary>Files with issues</summary>\n\n'
+              jq -r '.[] | select(.violations|length>0) | \
+                .filepath' sqlfluff.json
+              printf '\n</details>\n'
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
   plantuml:
