@@ -47,7 +47,7 @@ def create_module(
     
     module_id = str(uuid.uuid4())
 
-    with db_conn(autocommit=False) as conn, transaction(conn). db_cursor(conn) as cur:
+    with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
         exists = fetch_one(
             conn,
             "SELECT module_id FROM MODULES WHERE user_id=%s AND module_code=%s",
