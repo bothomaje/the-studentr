@@ -268,6 +268,10 @@ jobs:
             echo "VIOL=0" >> "$GITHUB_ENV"
           fi
 
+      - name: SQLFluff defaults when skipped
+        if: env.VIOL == ''
+        run: echo "VIOL=0" >> "$GITHUB_ENV"
+
       - name: Mark baseline
         if: steps.scope.outputs.first_run == 'true' && success()
         run: |
@@ -276,23 +280,27 @@ jobs:
 
       - name: Summary
         if: always()
+        env:
+          STATUS: ${{ job.status }}
         run: |
           {
-            printf '### Lint finished: **%s**\n' "${{ job.status }}"
-            printf '### SQLFluff result: **%s**\n' "${{ job.status }}"
+            printf '### SQLFluff result: **%s**\n' "$STATUS"
             printf 'Violations: %s\n' "${VIOL:-0}"
+
             if [ -f sqlfluff.json ]; then
               printf '\n<details><summary>Files with issues</summary>\n\n'
-              jq -r '.[] | select(.violations|length>0) | .filepath' \
-                sqlfluff.json
+
+              # Pretty list: file:line:col CODE: message
+              jq -r '.[] as $f
+                | $f.violations[]
+                | "- \($f.filepath):\(.line_no):\(.line_pos) \(.code): \
+                \(.description)"' sqlfluff.json >> "$GITHUB_STEP_SUMMARY"
+
               printf '\n</details>\n'
+            else
+              printf '\n_No SQL changes or report absent._\n'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
-          jq -r '.[] as $f
-            | $f.violations[]
-            | "- \($f.filepath):\(.line_no):
-            | \(.line_pos) \(.code): \(.description)"' \
-            sqlfluff.json >> "$GITHUB_STEP_SUMMARY"
 
   plantuml:
     name: Render UML
