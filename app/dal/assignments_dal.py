@@ -41,7 +41,12 @@ def _colour_from(status: str, score: Optional[float]) -> str:
 
 def get_assignment_by_id(assignment_id: str, user_id: str) -> Optional[dict]:
     with db_conn() as conn:
-        return fetch_one(conn, "SELECT * FROM ASSIGNMENTS WHERE assignment_id=%s AND user_id=%s", (assignment_id, user_id),)
+        return fetch_one(conn, 
+                         "SELECT a.* "
+                         "FROM ASSIGNMENTS a "
+                         "JOIN MODULES m ON m.module_id=a.module_id "
+                         "WHERE assignment_id=%s AND user_id=%s", 
+                         (assignment_id, user_id),)
 
 def list_assignments_for_module(
     module_id: str,

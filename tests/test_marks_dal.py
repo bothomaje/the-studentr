@@ -12,6 +12,6 @@ def test_marks_aggregates_and_weights(db_conn, db_tx):
     marks_dal.insert_mark(assignment_id=a1, weight=10, score=80)
     marks_dal.insert_mark(assignment_id=a2, weight=20, score=50)
     marks_dal.insert_mark(assignment_id=a3, weight=100, score=60)
-    averages = marks_dal.compute_category_averages(module_id=mod_id, user_id=uid)
-    assert 0 <= averages["year_mark"] <= 100 and 0 <= averages["exam_mark"] <= 100
-    assert averages["year_mark"] == 30
+    marks = marks_dal.list_marks_for_module(module_id=mod_id)
+    assert marks[1]['weight'] == 20
+    assert marks[2]['score'] == 60

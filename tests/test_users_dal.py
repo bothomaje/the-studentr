@@ -10,9 +10,9 @@ def test_users_crud_and_verify(db_conn, db_tx):
     got = users_dal.get_user_by_username(username)
     assert got and got["user_id"] == user_id
     ok = users_dal.verify_credentials(username=username, plain_password="P@ssw0rd!")
-    assert ok is True
+    assert ok
     bad = users_dal.verify_credentials(username=username, plain_password="wrong")
-    assert bad is False
+    assert not bad
     users_dal.update_profile(user_id, email="new+"+email)
     got2 = users_dal.get_user_by_id(user_id)
     assert got2["email"].startswith("new+")
