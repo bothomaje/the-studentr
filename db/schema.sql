@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS MODULES (
   PRIMARY KEY (module_id),
   FOREIGN KEY (user_id) REFERENCES USERS(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT user_module UNIQUE (user_id, module_code),
-  CONSTRAINT CHECK (year_mark_weight + exam_weight = 100)
+  CONSTRAINT CHECK (year_mark_weight + exam_weight = 100),
+  CREATE INDEX idx_modules_user ON MODULES(user_id)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS  ASSIGNMENTS (
@@ -47,7 +48,10 @@ CREATE TABLE IF NOT EXISTS  ASSIGNMENTS (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (assignment_id),
-  FOREIGN KEY (module_id) REFERENCES MODULES(module_id) ON DELETE CASCADE ON UPDATE CASCADE
+  FOREIGN KEY (module_id) REFERENCES MODULES(module_id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CREATE INDEX idx_asg_module_due ON ASSIGNMENTS(module_id, due_date),
+CREATE INDEX idx_asg_module_cat_due ON ASSIGNMENTS(module_id, category, due_date),
+CREATE INDEX idx_asg_module_status ON ASSIGNMENTS(module_id, status)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS MARKS (
@@ -60,12 +64,3 @@ CREATE TABLE IF NOT EXISTS MARKS (
   PRIMARY KEY (mark_id),
   FOREIGN KEY (assignment_id) REFERENCES ASSIGNMENTS(assignment_id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB;
-
-DROP INDEX IF EXISTS idx_modules_user ON MODULES;
-CREATE INDEX idx_modules_user ON MODULES(user_id);
-DROP INDEX IF EXISTS idx_asg_module_due ON ASSIGNMENTS;
-CREATE INDEX idx_asg_module_due ON ASSIGNMENTS(module_id, due_date);
-DROP INDEX IF EXISTS idx_asg_module_cat_due ON ASSIGNMENTS;
-CREATE INDEX idx_asg_module_cat_due ON ASSIGNMENTS(module_id, category, due_date);
-DROP INDEX IF EXISTS idx_asg_module_status ON ASSIGNMENTS;
-CREATE INDEX idx_asg_module_status ON ASSIGNMENTS(module_id, status);
