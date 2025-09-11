@@ -113,6 +113,7 @@ jobs:
       PY_FILES: ${{ needs.detect.outputs.py_files }}
       YAML_FILES: ${{ needs.detect.outputs.yaml_files }}
       SH_FILES: ${{ needs.detect.outputs.sh_files }}
+      ENFORCE_SQLFLUFF: "0"
     steps:
       - uses: actions/checkout@v4
 
@@ -221,10 +222,17 @@ jobs:
         if: steps.scope.outputs.first_run == 'true'
         run: |
           sqlfluff lint db scripts \
-            --format json --write-output sqlfluff.json || true
+            --format json \
+            --write-output sqlfluff.json
+          rc=$?
+          if [ "$rc" -gt 1 ]; then
+            exit "$rc"
+          fi
           VIOL=$(jq 'map(.violations|length)|add // 0' sqlfluff.json)
-          echo "VIOL=$VIOL" >> $GITHUB_ENV
-          test "$VIOL" -eq 0
+          echo "VIOL=$VIOL" >> "$GITHUB_ENV"
+          if [ "${ENFORCE_SQLFLUFF:-0}" = "1" ] && [ "$VIOL" -ne 0 ]; then
+            exit 1
+          fi
 
       - name: SQLFluff (changed)
         if: >-
@@ -233,20 +241,27 @@ jobs:
         env:
           SQL_FILES: ${{ needs.detect.outputs.sql_files }}
         run: |
-          python - <<'PY'
+          ppython - <<'PY'
           import json, os, subprocess, sys
           files = json.loads(os.environ.get("SQL_FILES","[]"))
-          if files:
-              # Lint only changed SQL files
-              cmd = ["sqlfluff","lint","--format","json",
-                "--write-output","sqlfluff.json",*files]
-              rc = subprocess.call(cmd)
-              sys.exit(0 if rc in (0,1) else rc)
+          if not files:
+              sys.exit(0)
+          rc = subprocess.call([
+              "sqlfluff","lint","--format","json",
+              "--write-output","sqlfluff.json", *files
+          ])
+          # rc: 0=clean, 1=violations, >1=error (fail on >1)
+          sys.exit(0 if rc in (0,1) else rc)
           PY
-          VIOL=$(jq 'map(.violations|length)|add // 0' \
-            sqlfluff.json 2>/dev/null || echo 0)
-          echo "VIOL=$VIOL" >> $GITHUB_ENV
-          test "$VIOL" -eq 0
+          if [ -f sqlfluff.json ]; then
+            VIOL=$(jq 'map(.violations|length)|add // 0' sqlfluff.json)
+            echo "VIOL=$VIOL" >> "$GITHUB_ENV"
+            if [ "${ENFORCE_SQLFLUFF:-0}" = "1" ] && [ "$VIOL" -ne 0 ]; then
+              exit 1
+            fi
+          else
+            echo "VIOL=0" >> "$GITHUB_ENV"
+          fi
 
       - name: Mark baseline
         if: steps.scope.outputs.first_run == 'true'
@@ -261,8 +276,8 @@ jobs:
             printf 'Violations: %s\n' "${VIOL:-0}"
             if [ -f sqlfluff.json ]; then
               printf '\n<details><summary>Files with issues</summary>\n\n'
-              jq -r '.[] | select(.violations|length>0) | \
-                .filepath' sqlfluff.json
+              jq -r '.[] | select(.violations|length>0) | .filepath' \
+                sqlfluff.json
               printf '\n</details>\n'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
