@@ -64,26 +64,25 @@ jobs:
 
       - name: Summary
         run: |
+          cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          - Python changed: **${{ steps.filter.outputs.py }}**
+          - DB/DAL/config changed: **${{ steps.filter.outputs.db }}**
+          - UML changed: **${{ steps.filter.outputs.uml }}**
+          - UI/Logic changed: **${{ steps.filter.outputs.ui }}**
+          EOF
           {
-            cat <<'EOF'
-            - Python changed: **${{ steps.filter.outputs.py }}**
-            - DB/DAL/config changed: **${{ steps.filter.outputs.db }}**
-            - UML changed: **${{ steps.filter.outputs.uml }}**
-            - UI/Logic changed: **${{ steps.filter.outputs.ui }}**
-            <details><summary>Changed Python files</summary>
-            EOF
-            echo '${{ steps.filter.outputs.py_files }}' | jq -r '.[]?'
-            cat <<'EOF'
-            </details>
-            <details><summary>Changed YAML files</summary>
-            EOF
-            echo '${{ steps.filter.outputs.yaml_files }}' | jq -r '.[]?'
-            cat <<'EOF'
-            </details>
-            <details><summary>Changed Shell scripts</summary>
-            EOF
-            echo '${{ steps.filter.outputs.sh_files }}' | jq -r '.[]?'
-            echo "</details>"
+            echo '<details><summary>Changed Python files</summary>';
+            echo;
+            echo '${{ steps.filter.outputs.py_files }}' | jq -r '.[]?';
+            echo '</details>';
+            echo '<details><summary>Changed YAML files</summary>';
+            echo;
+            echo '${{ steps.filter.outputs.yaml_files }}' | jq -r '.[]?';
+            echo '</details>';
+            echo '<details><summary>Changed Shell scripts</summary>';
+            echo;
+            echo '${{ steps.filter.outputs.sh_files }}' | jq -r '.[]?';
+            echo '</details>';
           } >> "$GITHUB_STEP_SUMMARY"
 
   lint:
