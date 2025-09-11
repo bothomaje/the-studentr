@@ -9,6 +9,9 @@ def main():
     conn = connect()
     try:
         uid = users_dal.create_user(username="ci_smoke_test", email="smoketest@ci.local", password="CiP@ss123!", first_name="Test", surname="Smoke")
+        info = users_dal.get_user_by_id(uid)
+        print(info["password_hash"])
+        print(users_dal.hash_password("CiP@ss123!"))
         if not users_dal.verify_credentials(username="ci_smoke_test", plain_password="CiP@ss123!"):
             fail("users: verify_credentials")
         ok("users")
