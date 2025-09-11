@@ -283,6 +283,10 @@ jobs:
               printf '\n</details>\n'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+          jq -r '.[] as $f
+            | $f.violations[]
+            | "- \($f.filepath):\(.line_no):\(.line_pos) \(.code): \(.description)"' \
+            sqlfluff.json >> "$GITHUB_STEP_SUMMARY"
 
   plantuml:
     name: Render UML
