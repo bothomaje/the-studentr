@@ -43,8 +43,8 @@ def get_assignment_by_id(assignment_id: str, user_id: str) -> Optional[dict]:
     with db_conn() as conn:
         return fetch_one(conn, 
                          "SELECT a.* "
-                         "FROM ASSIGNMENTS a "
-                         "JOIN MODULES m ON m.module_id=a.module_id "
+                         "FROM assignments a "
+                         "JOIN modules m ON m.module_id=a.module_id "
                          "WHERE assignment_id=%s AND user_id=%s", 
                          (assignment_id, user_id),)
 
@@ -70,8 +70,8 @@ def list_assignments_for_module(
         where.append("a.category=%s")
         params.append(category)
 
-    join = "JOIN MODULES m ON m.module_id = a.module_id "
-    join = join + ("LEFT JOIN MARKS mk ON mk.assignment_id=a.assignment_id" if include_marks else "")
+    join = "JOIN modules m ON m.module_id = a.module_id "
+    join = join + ("LEFT JOIN marks mk ON mk.assignment_id=a.assignment_id" if include_marks else "")
     select_marks = ", mk.weight, mk.score" if include_marks else ""
     order = "ORDER BY a.due_date, a.due_time" if order_by_due else "ORDER BY a.created_at"
 
@@ -81,7 +81,7 @@ def list_assignments_for_module(
       a.assignment_title, a.start_date, a.due_date, a.due_time,
       a.submit_date, a.submit_status, a.created_at, a.updated_at
       {select_marks}
-    FROM ASSIGNMENTS a
+    FROM assignments a
     {join}
     WHERE {" AND ".join(where)}
     {order}
@@ -107,9 +107,9 @@ def list_upcoming_for_user(
       a.due_date, a.due_time, a.submit_status,
       m.module_id, m.module_code, m.module_name,
       mk.weight, mk.score
-    FROM MODULES m
-    JOIN ASSIGNMENTS a ON a.module_id = m.module_id
-    LEFT JOIN MARKS mk ON mk.assignment_id = a.assignment_id
+    FROM modules m
+    JOIN assignments a ON a.module_id = m.module_id
+    LEFT JOIN marks mk ON mk.assignment_id = a.assignment_id
     WHERE m.user_id = %s
       AND TIMESTAMP(a.due_date, COALESCE(a.due_time,'23:59:00')) {comparator} NOW()
       AND TIMESTAMP(a.due_date, COALESCE(a.due_time,'23:59:00')) <= NOW() + INTERVAL %s DAY
@@ -124,7 +124,7 @@ def list_upcoming_for_user(
 def count_by_submit_status_for_module(module_id: str) -> dict[str, int]:
     sql = """
     SELECT a.submit_status, COUNT(*) AS c
-    FROM ASSIGNMENTS a
+    FROM assignments a
     WHERE a.module_id=%s
     GROUP BY a.submit_status
     """
@@ -154,11 +154,11 @@ def create_assignment(
         try:
             execute(
                 cur,
-                "INSERT INTO ASSIGNMENTS "
+                "INSERT INTO assignments "
                 "(assignment_id, module_id, category, assignment_type, assignment_title, "
                 "start_date, due_date, due_time, submit_date, submit_status) "
                 "SELECT %s, m.module_id, %s, %s, %s, %s, %s, %s, %s, %s "
-                "FROM MODULES m WHERE m.module_id=%s AND user_id=%s",
+                "FROM modules m WHERE m.module_id=%s AND user_id=%s",
                 (
                     assignment_id, category, assignment_type, assignment_title,
                     start_date, due_date, due_time, submit_date, submit_status, module_id, user_id,
@@ -223,7 +223,7 @@ def update_assignment(
     if not sets:
         return 0
 
-    sql = "UPDATE ASSIGNMENTS SET " + ", ".join(sets) + " WHERE assignment_id=%s"
+    sql = "UPDATE assignments SET " + ", ".join(sets) + " WHERE assignment_id=%s"
     params.append(assignment_id)
 
     with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
@@ -232,8 +232,8 @@ def update_assignment(
 def update_submit_status(assignment_id: str, submit_status: Status) -> int:
     _validate_submit_status(submit_status)
     with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
-        return execute(cur, "UPDATE ASSIGNMENTS SET submit_status=%s WHERE assignment_id=%s", (submit_status, assignment_id))
+        return execute(cur, "UPDATE assignments SET submit_status=%s WHERE assignment_id=%s", (submit_status, assignment_id))
 
 def delete_assignment(assignment_id: str) -> int:
     with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
-        return execute(cur, "DELETE FROM ASSIGNMENTS WHERE assignment_id=%s", (assignment_id,))
+        return execute(cur, "DELETE FROM assignments WHERE assignment_id=%s", (assignment_id,))

@@ -16,18 +16,18 @@ def list_modules_for_user(user_id: str) -> list[dict]:
             "SELECT module_id, module_code, module_name, "
             "       year_mark_weight, exam_weight, min_assignments, "
             "       min_year_mark, exam_subminimum, created_at, updated_at "
-            "FROM MODULES WHERE user_id=%s "
+            "FROM modules WHERE user_id=%s "
             "ORDER BY module_code",
             (user_id,),
         )
 
 def get_module_by_id(module_id: str, user_id: str) -> Optional[dict]:
     with db_conn() as conn:
-        return fetch_one(conn, "SELECT * FROM MODULES WHERE module_id=%s AND user_id=%s", (module_id, user_id),)
+        return fetch_one(conn, "SELECT * FROM modules WHERE module_id=%s AND user_id=%s", (module_id, user_id),)
 
 def get_module_by_code(user_id: str, module_code: str) -> Optional[dict]:
     with db_conn() as conn:
-        return fetch_one(conn, "SELECT * FROM MODULES WHERE user_id=%s AND module_code=%s", (user_id, module_code),)
+        return fetch_one(conn, "SELECT * FROM modules WHERE user_id=%s AND module_code=%s", (user_id, module_code),)
 
 def create_module(
         *,
@@ -50,7 +50,7 @@ def create_module(
     with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
         exists = fetch_one(
             conn,
-            "SELECT module_id FROM MODULES WHERE user_id=%s AND module_code=%s",
+            "SELECT module_id FROM modules WHERE user_id=%s AND module_code=%s",
             (user_id, module_code),
         )
         if exists:
@@ -59,7 +59,7 @@ def create_module(
         try:
             execute(
                 cur,
-                "INSERT INTO MODULES "
+                "INSERT INTO modules "
                 "(module_id, user_id, module_code, module_name, year_mark_weight, "
                 "exam_weight, min_assignments, min_year_mark, exam_subminimum) "
                 "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
@@ -119,7 +119,7 @@ def update_module(
     if not sets:
         return 0
 
-    sql = "UPDATE MODULES SET " + ", ".join(sets) + " WHERE module_id=%s AND user_id=%s"
+    sql = "UPDATE modules SET " + ", ".join(sets) + " WHERE module_id=%s AND user_id=%s"
     params.append(module_id)
     params.append(user_id)
 
@@ -133,7 +133,7 @@ def update_module(
 
 def delete_module(module_id: str) -> int:
     with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
-        return execute(cur, "DELETE FROM MODULES WHERE module_id=%s", (module_id,))
+        return execute(cur, "DELETE FROM modules WHERE module_id=%s", (module_id,))
     
 def list_modules_dashboard(user_id: str) -> list[dict]:
     sql = """
@@ -161,9 +161,9 @@ def list_modules_dashboard(user_id: str) -> list[dict]:
                 /  SUM(CASE WHEN a.category='Exam' AND mk.score IS NOT NULL THEN mk.weight END)
              ELSE NULL END, 2
       ) AS exam_mark
-    FROM MODULES m
-    LEFT JOIN ASSIGNMENTS a ON a.module_id = m.module_id
-    LEFT JOIN MARKS mk       ON mk.assignment_id = a.assignment_id
+    FROM modules m
+    LEFT JOIN assignments a ON a.module_id = m.module_id
+    LEFT JOIN marks mk       ON mk.assignment_id = a.assignment_id
     WHERE m.user_id = %s
     GROUP BY m.module_id
     ORDER BY m.module_code

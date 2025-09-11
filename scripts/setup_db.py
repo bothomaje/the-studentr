@@ -57,7 +57,7 @@ def main():
     cur.execute("SHOW TABLES")
     tables = [r[0] for r in cur.fetchall()]
     print("Tables: ", ", ".join(tables))
-    for t in ("USERS", "MODULES", "ASSIGNMENTS", "MARKS"):
+    for t in ("users", "modules", "assignments", "marks"):
         if t in tables:
             cur.execute(f"SELECT COUNT(*) FROM {t}")
             print(f"{t}: {cur.fetchone()[0]}")

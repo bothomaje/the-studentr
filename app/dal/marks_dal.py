@@ -20,8 +20,8 @@ def get_mark_by_assignment(assignment_id: str) -> Optional[dict]:
     sql = """
     SELECT mk.mark_id, mk.assignment_id, mk.weight, mk.score,
            a.module_id, a.category, a.assignment_title
-    FROM MARKS mk
-    JOIN ASSIGNMENTS a ON a.assignment_id = mk.assignment_id
+    FROM marks mk
+    JOIN assignments a ON a.assignment_id = mk.assignment_id
     WHERE mk.assignment_id = %s
     """
     with db_conn() as conn:
@@ -31,8 +31,8 @@ def list_marks_for_module(module_id: str) -> list[dict]:
     sql = """
     SELECT mk.mark_id, mk.assignment_id, mk.weight, mk.score,
            a.category, a.assignment_type, a.assignment_title, a.due_date, a.due_time, a.submit_status
-    FROM ASSIGNMENTS a
-    LEFT JOIN MARKS mk ON mk.assignment_id = a.assignment_id
+    FROM assignments a
+    LEFT JOIN marks mk ON mk.assignment_id = a.assignment_id
     WHERE a.module_id = %s
     ORDER BY a.category, a.due_date, a.due_time
     """
@@ -44,10 +44,10 @@ def insert_mark(*, assignment_id: str, weight: float, score: Optional[float] = N
     _validate_score(score)
 
     with db_conn(autocommit=False) as conn, transaction(conn):
-        row = fetch_one(conn, "SELECT mark_id FROM MARKS WHERE assignment_id=%s", (assignment_id,))
+        row = fetch_one(conn, "SELECT mark_id FROM marks WHERE assignment_id=%s", (assignment_id,))
         if row:
             with db_cursor(conn) as cur:
-                execute(cur, "UPDATE MARKS SET weight=%s, score=%s WHERE assignment_id=%s",
+                execute(cur, "UPDATE marks SET weight=%s, score=%s WHERE assignment_id=%s",
                         (weight, score, assignment_id))
             return row["mark_id"]
 
@@ -55,7 +55,7 @@ def insert_mark(*, assignment_id: str, weight: float, score: Optional[float] = N
         with db_cursor(conn) as cur:
             try:
                 execute(cur,
-                        "INSERT INTO MARKS (mark_id, assignment_id, weight, score) "
+                        "INSERT INTO marks (mark_id, assignment_id, weight, score) "
                         "VALUES (%s, %s, %s, %s)",
                         (mark_id, assignment_id, weight, score))
             except MySQLdb.IntegrityError as e:
@@ -67,13 +67,13 @@ def insert_mark(*, assignment_id: str, weight: float, score: Optional[float] = N
 def update_mark_score(*, assignment_id: str, score: Optional[float]) -> int:
     _validate_score(score)
     with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
-        return execute(cur, "UPDATE MARKS SET score=%s WHERE assignment_id=%s", (score, assignment_id))
+        return execute(cur, "UPDATE marks SET score=%s WHERE assignment_id=%s", (score, assignment_id))
 
 def update_mark_weight(*, assignment_id: str, weight: float) -> int:
     _validate_weight(weight)
     with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
-        return execute(cur, "UPDATE MARKS SET weight=%s WHERE assignment_id=%s", (weight, assignment_id))
+        return execute(cur, "UPDATE marks SET weight=%s WHERE assignment_id=%s", (weight, assignment_id))
 
 def delete_mark_by_assignment(assignment_id: str) -> int:
     with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
-        return execute(cur, "DELETE FROM MARKS WHERE assignment_id=%s", (assignment_id,))
+        return execute(cur, "DELETE FROM marks WHERE assignment_id=%s", (assignment_id,))

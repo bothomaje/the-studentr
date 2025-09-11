@@ -23,7 +23,7 @@ def main():
         tables = [r["table_name"] for r in rows]
         print("Tables:", ", ".join(tables) if tables else "(none)")
 
-        expected = ("USERS","MODULES","ASSIGNMENTS","MARKS")
+        expected = ("users","modules","assignments","marks")
         missing = [t for t in expected if t not in tables]
         if missing:
             print("Missing schema tables:", ", ".join(missing), file=sys.stderr)

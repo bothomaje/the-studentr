@@ -43,11 +43,11 @@ def verify_password(plain: str, stored_hash: str | bytes) -> bool:
 
 def get_user_by_username(username: str) -> Optional[dict]:
     with db_conn() as conn:
-        return fetch_one(conn, "SELECT * FROM USERS WHERE username = %s", (username,))
+        return fetch_one(conn, "SELECT * FROM users WHERE username = %s", (username,))
 
 def get_user_by_id(user_id: str) -> Optional[dict]:
     with db_conn() as conn:
-        return fetch_one(conn, "SELECT * FROM USERS WHERE user_id = %s", (user_id,))
+        return fetch_one(conn, "SELECT * FROM users WHERE user_id = %s", (user_id,))
 
 def create_user(
         *,
@@ -62,13 +62,13 @@ def create_user(
     pwd_hash = hash_password(password)
 
     with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
-        row = fetch_one(conn, "SELECT user_id FROM USERS WHERE username = %s or email = %s", (username, email))
+        row = fetch_one(conn, "SELECT user_id FROM users WHERE username = %s or email = %s", (username, email))
         if row:
             raise UserAlreadyExists("Username or email already exists")
         
         execute(
             cur,
-            "INSERT INTO USERS (user_id, username, email, password_hash, first_name, surname) "
+            "INSERT INTO users (user_id, username, email, password_hash, first_name, surname) "
             "VALUES (%s, %s, %s, %s, %s, %s)",
             (user_id, username, email, pwd_hash, first_name, surname),
         )
@@ -77,7 +77,7 @@ def create_user(
 def update_password(*, user_id: str, new_password: str) -> int:
     pwd_hash = hash_password(new_password)
     with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
-        return execute(cur, "UPDATE USERS SET password_hash = %s WHERE user_id = %s", (pwd_hash, user_id))
+        return execute(cur, "UPDATE users SET password_hash = %s WHERE user_id = %s", (pwd_hash, user_id))
     
 def update_profile(
         *,
@@ -106,7 +106,7 @@ def update_profile(
     if not sets:
         return 0
     
-    sql = "UPDATE USERS SET " + ", ".join(sets) + " WHERE user_id=%s"
+    sql = "UPDATE users SET " + ", ".join(sets) + " WHERE user_id=%s"
     params.append(user_id)
 
     with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
@@ -119,7 +119,7 @@ def update_profile(
 
 def delete_user(user_id: str) -> int:
     with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
-        return execute(cur, "DELETE FROM USERS WHERE user_id = %s", (user_id,))
+        return execute(cur, "DELETE FROM users WHERE user_id = %s", (user_id,))
     
 def verify_credentials(username: str, plain_password: str) -> Optional[dict]:
     user = get_user_by_username(username)
