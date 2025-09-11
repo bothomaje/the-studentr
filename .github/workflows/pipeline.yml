@@ -9,7 +9,7 @@ name: Pipeline
   workflow_dispatch:
     inputs:
       run_all:
-        description: | 
+        description: |
           "Force run all jobs (ignore change detection)"
         required: false
         type: boolean
@@ -23,7 +23,7 @@ name: Pipeline
         description: "Fail on SQLFluff violations (0/1)"
         required: false
         type: choice
-        options: ["0","1"]
+        options: ["0", "1"]
         default: "0"
 
 concurrency:
