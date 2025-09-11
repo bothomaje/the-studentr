@@ -133,7 +133,7 @@ def create_assignment(
     assignment_title: str,
     start_date: Optional[date] = None,
     due_date: date,
-    due_time: Optional[time] = None,
+    due_time: Optional[time] = "23:59:00",
     submit_date: Optional[date] = None,
     status: Status = "Not Started",
 ) -> str:
