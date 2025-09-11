@@ -1,0 +1,353 @@
+name: Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: pipeline-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      py_changed: ${{ steps.filter.outputs.py_any_changed }}
+      py_files: ${{ steps.filter.outputs.py_all_changed_files }}
+      uml_changed: ${{ steps.filter.outputs.uml_any_changed }}
+      db_changed: ${{ steps.filter.outputs.db_any_changed }}
+      ui_logic_changed: ${{ steps.filter.outputs.ui_any_changed }}
+      ym_files: ${{ steps.filter.outputs.yaml_all_changed_files }}
+      sh_files: ${{ steps.filter.outputs.sh_all_changed_files }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Paths filter
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          list-files: json
+          filters: |
+            py:
+              - 'app/**/*.py'
+              - 'scripts/**/*.py'
+              - 'tests/**/*.py'
+            db:
+              - 'db/**'
+              - 'scripts/**'
+              - 'app/dal/**'
+              - 'app/config/env.py'
+              - 'requirements.txt'
+            uml:
+              - 'docs/diagrams/**/*.puml'
+            ui:
+              - 'app/ui_adapters/**/*.py'
+              - 'app/**/*.ui'
+              - 'app/**/*.qml'
+              - 'app/**/*.py'
+              - '!app/dal/**'
+              - '!app/config/**'
+            yaml:
+              - '**/*.y?(a)ml'
+            sh:
+              - '**/*.sh'
+              
+      - name: Summary
+        run: |
+          {
+            echo "## Change detection";
+            echo "";
+            echo "- Python changed: **${{ steps.filter.outputs.py_any_changed }}**";
+            echo "- DB/DAL/config changed: **${{ steps.filter.outputs.db_any_changed }}**";
+            echo "- UML changed: **${{ steps.filter.outputs.uml_any_changed }}**";
+            echo "- UI/Logic changed: **${{ steps.filter.outputs.ui_any_changed }}**";
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  lint:
+    name: Lint
+    needs: detect
+    runs-on: ubuntu-latest
+    env:
+      PY_CHANGED: ${{ needs.detect.outputs.py_changed }}
+      PY_FILES: ${{ needs.detect.outputs.py_files }}
+      YM_FILES: ${{ needs.detect.outputs.ym_files }}
+      SH_FILES: ${{ needs.detect.outputs.sh_files }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: "requirements.txt"
+          
+      - name: Install linters
+        run: |
+          pip install ruff==0.6.*  # fast Python linter
+          python -m pip install --upgrade pip
+          sudo apt-get update && sudo apt-get install -y yamllint shellcheck
+          
+      - name: Lint baseline cache
+        id: lintcache
+        uses: actions/cache@v4
+        with:
+          path: .cache/lint-baseline
+          key: lint-baseline-v1
+          
+      - name: Decide scope and write summary
+        id: scope
+        shell: bash
+        run: |
+          mkdir -p .cache/lint-baseline
+          FIRST_RUN="false"
+          if [[ "${{ steps.lintcache.outputs.cache-hit }}" != "true" ]]; then
+            FIRST_RUN="true"
+          fi
+
+          echo "first_run=$FIRST_RUN" >> "$GITHUB_OUTPUT"
+
+          echo "## Lint scope" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$FIRST_RUN" == "true" ]]; then
+            echo "First run: lint **entire repo**." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Subsequent run: lint **changed files only**." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          
+      - name: Run ruff
+        if: steps.scope.outputs.first_run == 'true'
+        run: ruff check .
+        
+      - name: Run ruff on changed Python files
+        if: steps.scope.outputs.first_run != 'true' && env.PY_CHANGED == 'true'
+        run: |
+          python - << 'PY'
+          import json, os, shlex, subprocess
+          files = json.loads(os.environ.get("PY_FILES","[]"))
+          if files:
+            subprocess.check_call(["ruff","check",*files])
+          PY
+          
+      - name: YAML lint
+        if: steps.scope.outputs.first_run == 'true'
+        run: yamllint -s .
+
+      - name: YAML lint on changed files
+        if: steps.scope.outputs.first_run != 'true' && env.YM_FILES != ''
+        run: |
+          python - << 'PY'
+          import json, os, subprocess
+          files = json.loads(os.environ.get("YM_FILES","[]"))
+          if files:
+            subprocess.check_call(["yamllint","-s",*files])
+          PY
+
+      - name: ShellCheck
+        if: steps.scope.outputs.first_run == 'true'
+        run: |
+          shopt -s globstar nullglob
+          files=( **/*.sh )
+          if (( ${#files[@]} )); then shellcheck "${files[@]}"; else echo "No shell scripts."; fi
+
+      - name: ShellCheck on changed scripts
+        if: steps.scope.outputs.first_run != 'true' && env.SH_FILES != ''
+        run: |
+          python - << 'PY'
+          import json, os, subprocess
+          files = json.loads(os.environ.get("SH_FILES","[]"))
+          if files:
+            subprocess.check_call(["shellcheck", *files])
+          PY
+
+      - name: Mark baseline
+        if: steps.scope.outputs.first_run == 'true'
+        run: echo "ok" > .cache/lint-baseline/marker
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Lint finished ✅" >> "$GITHUB_STEP_SUMMARY"
+
+  plantuml:
+    name: Render UML
+    needs: lint
+    if: needs.detect.outputs.uml_changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Graphviz
+        run: sudo apt-get update && sudo apt-get install -y graphviz
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Download PlantUML
+        run: curl -L -o plantuml.jar https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar
+
+      - name: Render .puml to .svg
+        run: |
+          find docs/diagrams -name '*.puml' -print0 | while IFS= read -r -d '' f; do
+            java -jar plantuml.jar -tsvg "$f"
+          done
+
+      - name: Commit rendered SVGs
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(diagrams): render PlantUML"
+          file_pattern: docs/diagrams/*.svg
+
+      - name: Summary
+        run: echo "### PlantUML rendered and committed ✅" >> "$GITHUB_STEP_SUMMARY"
+
+  db-validate:
+    name: Validate Data Model
+    needs: lint
+    if: needs.detect.outputs.db_changed == 'true'
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:9.0
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.CI_DB_ROOT_PASS }}
+          MYSQL_DATABASE: the_studentr
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -p${{ secrets.CI_DB_ROOT_PASS }}"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      SA_DB_HOST: 127.0.0.1
+      SA_DB_PORT: 3306
+      SA_DB_USER: root
+      SA_DB_PASS: ${{ secrets.CI_DB_ROOT_PASS }}
+      SA_DB_NAME: the_studentr
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
+
+      - name: Build deps for mysqlclient
+        run: sudo apt-get update && sudo apt-get install -y libmysqlclient-dev
+
+      - name: Install python deps
+        run: pip install -r requirements.txt
+
+      - name: Setup DB
+        run: python -m scripts.setup_db
+
+      - name: Add repo root to PYTHONPATH
+        run: echo "PYTHONPATH=$PWD" >> $GITHUB_ENV
+
+      - name: DAL smoke
+        run: python -m scripts.dal_smoke
+
+      - name: CI smoke
+        run: python -m scripts.ci_smoke
+
+      - name: Unit tests
+        run: pytest -q
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Data model validation finished with status: **${{ job.status }}**" >> "$GITHUB_STEP_SUMMARY"
+
+  ui-logic-validate:
+    name: Validate UI & Logic
+    needs: [lint, db-validate]
+    if: needs.detect.outputs.ui_logic_changed == 'true' && (needs.detect.outputs.db_changed != 'true' || needs.db-validate.result == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
+
+      - name: Install deps
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-qt
+
+      - name: Add repo root to PYTHONPATH
+        run: echo "PYTHONPATH=$PWD" >> $GITHUB_ENV
+
+      - name: UI/logic tests
+        run: |
+          # Adjust test selection as you add UI tests
+          pytest -q tests -k "not db and not schema"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### UI/Logic validation finished with status: **${{ job.status }}**" >> "$GITHUB_STEP_SUMMARY"
+
+  build-macos:
+    name: Build macOS app
+    needs: [lint, db-validate, ui-logic-validate]
+    if: ${{ (needs.ui-logic-validate.result == 'success') || (needs.detect.outputs.ui_logic_changed != 'true') }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
+
+      - name: Install build deps
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller==6.6.*
+          brew install create-dmg || true
+
+      - name: Build app bundle
+        env:
+          APP_ENTRY: app/main.py
+          APP_NAME: the-studentr
+        run: |
+          mkdir -p dist
+          pyinstaller --noconfirm --windowed --name "$APP_NAME" "$APP_ENTRY"
+          echo "Built app at dist/$APP_NAME.app"
+
+      - name: Create DMG
+        continue-on-error: true
+        env:
+          APP_NAME: the-studentr
+        run: |
+          if command -v create-dmg >/dev/null 2>&1; then
+            create-dmg "dist/${APP_NAME}.dmg" "dist/${APP_NAME}.app" || true
+          else
+            echo "create-dmg not available; skipping DMG step."
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-build
+          path: |
+            dist/*.app
+            dist/*.dmg
+          if-no-files-found: warn
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### macOS build finished with status: **${{ job.status }}**" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Artifacts: .app bundle and (if available) .dmg" >> "$GITHUB_STEP_SUMMARY"
