@@ -221,10 +221,12 @@ jobs:
       - name: SQLFluff (full)
         if: steps.scope.outputs.first_run == 'true'
         run: |
+          set +e
           sqlfluff lint db scripts \
             --format json \
             --write-output sqlfluff.json
           rc=$?
+          set -e
           if [ "$rc" -gt 1 ]; then
             exit "$rc"
           fi
@@ -235,9 +237,8 @@ jobs:
           fi
 
       - name: SQLFluff (changed)
-        if: >-
-          steps.scope.outputs.first_run != 'true' &&
-          needs.detect.outputs.sql_changed == 'true'
+        if: steps.scope.outputs.first_run != 'true' && \
+            needs.detect.outputs.sql_changed == 'true'
         env:
           SQL_FILES: ${{ needs.detect.outputs.sql_files }}
         run: |
