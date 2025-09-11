@@ -16,16 +16,16 @@ jobs:
     name: Detect changes
     runs-on: ubuntu-latest
     outputs:
-      py_changed: ${{ steps.filter.outputs.py_any_changed }}
-      py_files: ${{ steps.filter.outputs.py_all_changed_files }}
-      uml_changed: ${{ steps.filter.outputs.uml_any_changed }}
-      db_changed: ${{ steps.filter.outputs.db_any_changed }}
-      ui_logic_changed: ${{ steps.filter.outputs.ui_any_changed }}
-      ym_files: ${{ steps.filter.outputs.yaml_all_changed_files }}
-      sh_files: ${{ steps.filter.outputs.sh_all_changed_files }}
+      py_changed: ${{ steps.filter.outputs.py }}
+      py_files: ${{ steps.filter.outputs.py_files }}
+      uml_changed: ${{ steps.filter.outputs.uml }}
+      db_changed: ${{ steps.filter.outputs.db }}
+      ui_logic_changed: ${{ steps.filter.outputs.ui }}
+      yaml_files: ${{ steps.filter.outputs.yaml_files }}
+      sh_files: ${{ steps.filter.outputs.sh_files }}
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Paths filter
         id: filter
         uses: dorny/paths-filter@v3
@@ -55,16 +55,33 @@ jobs:
               - '**/*.y?(a)ml'
             sh:
               - '**/*.sh'
-              
+
       - name: Summary
         run: |
           {
             echo "## Change detection";
             echo "";
-            echo "- Python changed: **${{ steps.filter.outputs.py_any_changed }}**";
-            echo "- DB/DAL/config changed: **${{ steps.filter.outputs.db_any_changed }}**";
-            echo "- UML changed: **${{ steps.filter.outputs.uml_any_changed }}**";
-            echo "- UI/Logic changed: **${{ steps.filter.outputs.ui_any_changed }}**";
+            echo "- Python changed: \
+              **${{ steps.filter.outputs.py }}**";
+            echo "- DB/DAL/config changed: \
+              **${{ steps.filter.outputs.db }}**";
+            echo "- UML changed: \
+              **${{ steps.filter.outputs.uml }}**";
+            echo "- UI/Logic changed: \
+              **${{ steps.filter.outputs.ui }}**";
+            echo "";
+            echo "<details><summary>Changed Python files</summary>";
+            echo "";
+            echo '${{ steps.filter.outputs.py_files }}' | jq -r '.[]?';
+            echo "</details>";
+            echo "<details><summary>Changed YAML files</summary>";
+            echo "";
+            echo '${{ steps.filter.outputs.yaml_files }}' | jq -r '.[]?';
+            echo "</details>";
+            echo "<details><summary>Changed Shell scripts</summary>";
+            echo "";
+            echo '${{ steps.filter.outputs.sh_files }}' | jq -r '.[]?';
+            echo "</details>";
           } >> "$GITHUB_STEP_SUMMARY"
 
   lint:
@@ -74,75 +91,73 @@ jobs:
     env:
       PY_CHANGED: ${{ needs.detect.outputs.py_changed }}
       PY_FILES: ${{ needs.detect.outputs.py_files }}
-      YM_FILES: ${{ needs.detect.outputs.ym_files }}
+      YAML_FILES: ${{ needs.detect.outputs.yaml_files }}
       SH_FILES: ${{ needs.detect.outputs.sh_files }}
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
           cache-dependency-path: "requirements.txt"
-          
+
       - name: Install linters
         run: |
           pip install ruff==0.6.*  # fast Python linter
           python -m pip install --upgrade pip
           sudo apt-get update && sudo apt-get install -y yamllint shellcheck
-          
+
       - name: Lint baseline cache
         id: lintcache
         uses: actions/cache@v4
         with:
           path: .cache/lint-baseline
           key: lint-baseline-v1
-          
+
       - name: Decide scope and write summary
         id: scope
         shell: bash
         run: |
-          mkdir -p .cache/lint-baseline
           FIRST_RUN="false"
-          if [[ "${{ steps.lintcache.outputs.cache-hit }}" != "true" ]]; then
+          [[ "${{ steps.lintcache.outputs.cache-hit }}" != "true" ]] && \
             FIRST_RUN="true"
-          fi
-
           echo "first_run=$FIRST_RUN" >> "$GITHUB_OUTPUT"
-
           echo "## Lint scope" >> "$GITHUB_STEP_SUMMARY"
-          if [[ "$FIRST_RUN" == "true" ]]; then
-            echo "First run: lint **entire repo**." >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "Subsequent run: lint **changed files only**." >> "$GITHUB_STEP_SUMMARY"
-          fi
-          
+          [[ "$FIRST_RUN" == "true" ]] && \
+          echo "First run: full repo." >> "$GITHUB_STEP_SUMMARY" || \
+          echo "Changed files only." >> "$GITHUB_STEP_SUMMARY"
+
       - name: Run ruff
         if: steps.scope.outputs.first_run == 'true'
         run: ruff check .
-        
+
       - name: Run ruff on changed Python files
         if: steps.scope.outputs.first_run != 'true' && env.PY_CHANGED == 'true'
         run: |
           python - << 'PY'
-          import json, os, shlex, subprocess
+          import json, os, subprocess
           files = json.loads(os.environ.get("PY_FILES","[]"))
           if files:
             subprocess.check_call(["ruff","check",*files])
+          else:
+            print("No changed Python files")
           PY
-          
+
       - name: YAML lint
         if: steps.scope.outputs.first_run == 'true'
         run: yamllint -s .
 
       - name: YAML lint on changed files
-        if: steps.scope.outputs.first_run != 'true' && env.YM_FILES != ''
+        if: steps.scope.outputs.first_run != 'true' && env.YAML_FILES != ''
         run: |
           python - << 'PY'
           import json, os, subprocess
-          files = json.loads(os.environ.get("YM_FILES","[]"))
+          files = json.loads(os.environ.get("YAML_FILES","[]"))
           if files:
             subprocess.check_call(["yamllint","-s",*files])
+          else:
+            print("No changed YAML files")
           PY
 
       - name: ShellCheck
@@ -150,7 +165,8 @@ jobs:
         run: |
           shopt -s globstar nullglob
           files=( **/*.sh )
-          if (( ${#files[@]} )); then shellcheck "${files[@]}"; else echo "No shell scripts."; fi
+          if (( ${#files[@]} )); then shellcheck "${files[@]}"; \
+            else echo "No shell scripts."; fi
 
       - name: ShellCheck on changed scripts
         if: steps.scope.outputs.first_run != 'true' && env.SH_FILES != ''
@@ -160,6 +176,8 @@ jobs:
           files = json.loads(os.environ.get("SH_FILES","[]"))
           if files:
             subprocess.check_call(["shellcheck", *files])
+          else:
+            print("No changed shell scripts")
           PY
 
       - name: Mark baseline
@@ -174,7 +192,7 @@ jobs:
   plantuml:
     name: Render UML
     needs: lint
-    if: needs.detect.outputs.uml_changed == 'true'
+    if: ${{ needs.detect.outputs.uml_changed == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -191,7 +209,9 @@ jobs:
           java-version: '17'
 
       - name: Download PlantUML
-        run: curl -L -o plantuml.jar https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar
+        run: |
+          curl -L -o plantuml.jar \
+          https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar
 
       - name: Render .puml to .svg
         run: |
