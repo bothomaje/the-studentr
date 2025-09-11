@@ -13,33 +13,34 @@ try:
 except Exception as e:
     bcrypt = None
 
+class UserAlreadyExists(Exception):
+    pass
+
 def _require_bcrypt():
     if bcrypt is None:
         raise RuntimeError("Missing dependency (bcrypt)")
     
 def hash_password(plain: str, rounds: int = 12) -> str:
     _require_bcrypt()
-    pw = (plain or "").encode("utf-8")
+    if plain is None:
+        plain = ""
     salt = bcrypt.gensalt(rounds)
-    hashed = bcrypt.hashpw(pw, salt)
+    hashed = bcrypt.hashpw(plain.encode("utf-8"), salt)
     return hashed.decode("utf-8")
 
-def verify_password(plain: str, password_hash: str | bytes) -> bool:
+def verify_password(plain: str, stored_hash: str | bytes) -> bool:
     _require_bcrypt()
-    if not password_hash:
-        return False
-    pw = (plain or "").encode("utf-8")
-    if isinstance(password_hash, str):
-        hashed = password_hash.encode("utf-8")
-    else:
-        hashed = password_hash
-    try:
-        return bcrypt.checkpw(pw, hashed)
-    except ValueError:
+    if not stored_hash:
         return False
 
-class UserAlreadyExists(Exception):
-    pass
+    if isinstance(stored_hash, str):
+        stored_hash_bytes = stored_hash.encode("utf-8")
+    else:
+        stored_hash_bytes = stored_hash
+    try:
+        return bcrypt.checkpw((plain or "").encode("utf-8"), stored_hash_bytes)
+    except ValueError:
+        return False
 
 def get_user_by_username(username: str) -> Optional[dict]:
     with db_conn() as conn:
@@ -57,6 +58,7 @@ def create_user(
         first_name: str,
         surname: str,
 ) -> str:
+    _require_bcrypt()
     user_id = str(uuid.uuid4())
     pwd_hash = hash_password(password)
 
@@ -125,5 +127,5 @@ def verify_credentials(username: str, plain_password: str) -> Optional[dict]:
     if not user:
         return None
     if verify_password(plain_password, user.get("password_hash")):
-        return None
-    return user
+        return user
+    return None
