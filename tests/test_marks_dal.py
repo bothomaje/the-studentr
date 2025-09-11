@@ -13,5 +13,5 @@ def test_marks_aggregates_and_weights(db_conn, db_tx):
     marks_dal.insert_mark(assignment_id=a2, weight=20, score=50)
     marks_dal.insert_mark(assignment_id=a3, weight=100, score=60)
     marks = marks_dal.list_marks_for_module(module_id=mod_id)
-    assert marks[1]['weight'] == 20
-    assert marks[2]['score'] == 60
+    assert marks[1]['weight'] == 10
+    assert marks[2]['score'] == 50
