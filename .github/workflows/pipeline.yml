@@ -64,23 +64,32 @@ jobs:
               - '**/*.sh'
 
       - name: Summary
+        env:
+          PY_CHANGED:   ${{ steps.filter.outputs.py }}
+          DB_CHANGED:   ${{ steps.filter.outputs.db }}
+          UML_CHANGED:  ${{ steps.filter.outputs.uml }}
+          UI_CHANGED:   ${{ steps.filter.outputs.ui }}
+          YAML_CHANGED: ${{ steps.filter.outputs.yaml }}
+          PY_FILES:     ${{ steps.filter.outputs.py_files }}
+          YAML_FILES:   ${{ steps.filter.outputs.yaml_files }}
+          SH_FILES:     ${{ steps.filter.outputs.sh_files }}
         run: |
           {
             printf '%s\n' '## Change detection' ''
-            printf '%s\n' "- Python changed: **${{ steps.filter.outputs.py }}**"
-            printf '%s\n' "- DB/DAL/config changed: **${{ steps.filter.outputs.db }}**"
-            printf '%s\n' "- UML changed: **${{ steps.filter.outputs.uml }}**"
-            printf '%s\n' "- UI/Logic changed: **${{ steps.filter.outputs.ui }}**"
-            printf '%s\n' "- YAML changed: **${{ steps.filter.outputs.yaml }}**"
+            printf '%s\n' "- Python changed: **$PY_CHANGED**"
+            printf '%s\n' "- DB/DAL/config changed: **$DB_CHANGED**"
+            printf '%s\n' "- UML changed: **$UML_CHANGED**"
+            printf '%s\n' "- UI/Logic changed: **$UI_CHANGED**"
+            printf '%s\n' "- YAML changed: **$YAML_CHANGED**"
             printf '%s\n' ''
             printf '%s\n' '<details><summary>Changed Python files</summary>' ''
-            echo '${{ steps.filter.outputs.py_files }}' | jq -r '.[]?'
+            echo "$PY_FILES" | jq -r '.[]?'
             printf '%s\n' '</details>'
             printf '%s\n' '<details><summary>Changed YAML files</summary>' ''
-            echo '${{ steps.filter.outputs.yaml_files }}' | jq -r '.[]?'
+            echo "$YAML_FILES" | jq -r '.[]?'
             printf '%s\n' '</details>'
             printf '%s\n' '<details><summary>Changed Shell scripts</summary>' ''
-            echo '${{ steps.filter.outputs.sh_files }}' | jq -r '.[]?'
+            echo "$SH_FILES" | jq -r '.[]?'
             printf '%s\n' '</details>'
           } >> "$GITHUB_STEP_SUMMARY"
 
