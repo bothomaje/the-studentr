@@ -8,8 +8,8 @@ def fail(msg): print(f"[FAIL] {msg}"); sys.exit(1)
 def main():
     conn = connect()
     try:
-        uid = users_dal.create_user(username=f"ci_{uid[:6]}", email=f"{uid[:6]}@ci.local", password="CiP@ss123!", first_name="Test", surname="Smoke")
-        if not users_dal.verify_credentials(username=f"ci_{uid[:6]}", plain_password="CiP@ss123!"):
+        uid = users_dal.create_user(username="ci_smoke_test", email="smoketest@ci.local", password="CiP@ss123!", first_name="Test", surname="Smoke")
+        if not users_dal.verify_credentials(username=f"ci_smoke_test", plain_password="CiP@ss123!"):
             fail("users: verify_credentials")
         ok("users")
 

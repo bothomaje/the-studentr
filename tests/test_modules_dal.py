@@ -2,7 +2,7 @@ import uuid
 from app.dal import modules_dal, users_dal
 
 def test_modules_dashboard_and_crud(db_conn, db_tx):
-    uid = users_dal.create_user(username=f"user_{uid[:6]}", email=f"{uid[:6]}@x.com", password="heyHey12!", first_name="Test", surname="Two")
+    uid = users_dal.create_user(username="user_modules_test", email="modules_test@x.com", password="heyHey12!", first_name="Test", surname="Two")
     mod_id = modules_dal.create_module(
         user_id=uid, module_code="COS2611", module_name="Data Structures",
         year_mark_weight=40, exam_weight=60,

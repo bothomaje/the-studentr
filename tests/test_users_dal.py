@@ -2,8 +2,8 @@ import uuid
 from app.dal import users_dal
 
 def test_users_crud_and_verify(db_conn, db_tx):
-    username = f"test_{user_id[:8]}"
-    email = f"{user_id[:8]}@example.com"
+    username = "test_users_dal"
+    email = "test_users_dal@example.com"
     firstname = "Test"
     surname = "One"
     user_id = users_dal.create_user(user_id=user_id, username=username, email=email, password="P@ssw0rd!", first_name=firstname, surname=surname)
