@@ -18,9 +18,9 @@ TYPES_BY_CATEGORY: dict[str, set[str]] = {
     "Exam": {"Quiz", "Written exam", "Take-Home exam"},
 }
 
-def _validate_status(status: str) -> None:
-    if status not in STATUS_VALUES:
-        raise ValueError(f"Invalid status '{status}'")
+def _validate_submit_status(submit_status: str) -> None:
+    if submit_status not in STATUS_VALUES:
+        raise ValueError(f"Invalid status '{submit_status}'")
 
 def _validate_category_type(category: str, assignment_type: str) -> None:
     if category not in CATEGORY_VALUES:
@@ -32,8 +32,8 @@ def _validate_category_type(category: str, assignment_type: str) -> None:
             f"Allowed: {sorted(allowed)}"
         )
 
-def _colour_from(status: str, score: Optional[float]) -> str:
-    if status != "Done":
+def _colour_from(submit_status: str, score: Optional[float]) -> str:
+    if submit_status != "Done":
         return "Yellow"
     if score is None:
         return "Orange"
@@ -52,7 +52,7 @@ def list_assignments_for_module(
     module_id: str,
     user_id: str,
     *,
-    status: Optional[Status] = None,
+    submit_status: Optional[Status] = None,
     category: Optional[Category] = None,
     include_marks: bool = True,
     order_by_due: bool = True,
@@ -60,10 +60,10 @@ def list_assignments_for_module(
     params: list = [module_id, user_id]
     where = ["a.module_id=%s", "m.user_id=%s"]
 
-    if status:
-        _validate_status(status)
-        where.append("a.status=%s")
-        params.append(status)
+    if submit_status:
+        _validate_submit_status(submit_status)
+        where.append("a.submit_status=%s")
+        params.append(submit_status)
     if category:
         if category not in CATEGORY_VALUES:
             raise ValueError("Invalid category")
@@ -79,7 +79,7 @@ def list_assignments_for_module(
     SELECT
       a.assignment_id, a.module_id, a.category, a.assignment_type,
       a.assignment_title, a.start_date, a.due_date, a.due_time,
-      a.submit_date, a.status, a.created_at, a.updated_at
+      a.submit_date, a.submit_status, a.created_at, a.updated_at
       {select_marks}
     FROM ASSIGNMENTS a
     {join}
@@ -91,7 +91,7 @@ def list_assignments_for_module(
 
     if include_marks:
         for r in rows:
-            r["colour"] = _colour_from(r["status"], r.get("score"))
+            r["colour"] = _colour_from(r["submit_status"], r.get("score"))
     return rows
 
 def list_upcoming_for_user(
@@ -104,7 +104,7 @@ def list_upcoming_for_user(
     sql = f"""
     SELECT
       a.assignment_id, a.category, a.assignment_type, a.assignment_title,
-      a.due_date, a.due_time, a.status,
+      a.due_date, a.due_time, a.submit_status,
       m.module_id, m.module_code, m.module_name,
       mk.weight, mk.score
     FROM MODULES m
@@ -118,19 +118,19 @@ def list_upcoming_for_user(
     with db_conn() as conn:
         rows = fetch_all(conn, sql, (user_id, days))
     for r in rows:
-        r["colour"] = _colour_from(r["status"], r.get("score"))
+        r["colour"] = _colour_from(r["submit_status"], r.get("score"))
     return rows
 
-def count_by_status_for_module(module_id: str) -> dict[str, int]:
+def count_by_submit_status_for_module(module_id: str) -> dict[str, int]:
     sql = """
-    SELECT a.status, COUNT(*) AS c
+    SELECT a.submit_status, COUNT(*) AS c
     FROM ASSIGNMENTS a
     WHERE a.module_id=%s
-    GROUP BY a.status
+    GROUP BY a.submit_status
     """
     with db_conn() as conn:
         rows = fetch_all(conn, sql, (module_id,))
-    return {r["status"]: int(r["c"]) for r in rows}
+    return {r["submit_status"]: int(r["c"]) for r in rows}
 
 def create_assignment(
     *,
@@ -143,9 +143,9 @@ def create_assignment(
     due_date: date,
     due_time: Optional[time] = "23:59:00",
     submit_date: Optional[date] = None,
-    status: Status = "Not Started",
+    submit_status: Status = "Not Started",
 ) -> str:
-    _validate_status(status)
+    _validate_submit_status(submit_status)
     _validate_category_type(category, assignment_type)
 
     assignment_id = str(uuid.uuid4())
@@ -156,12 +156,12 @@ def create_assignment(
                 cur,
                 "INSERT INTO ASSIGNMENTS "
                 "(assignment_id, module_id, category, assignment_type, assignment_title, "
-                "start_date, due_date, due_time, submit_date, status) "
+                "start_date, due_date, due_time, submit_date, submit_status) "
                 "SELECT %s, m.module_id, %s, %s, %s, %s, %s, %s, %s, %s "
                 "FROM MODULES m WHERE m.module_id=%s AND user_id=%s",
                 (
                     assignment_id, category, assignment_type, assignment_title,
-                    start_date, due_date, due_time, submit_date, status, module_id, user_id,
+                    start_date, due_date, due_time, submit_date, submit_status, module_id, user_id,
                 ),
             )
         except MySQLdb.IntegrityError as e:
@@ -180,10 +180,10 @@ def update_assignment(
     due_date: Optional[date] = None,
     due_time: Optional[time] = None,
     submit_date: Optional[date] = None,
-    status: Optional[Status] = None,
+    submit_status: Optional[Status] = None,
 ) -> int:
-    if status is not None:
-        _validate_status(status)
+    if submit_status is not None:
+        _validate_submit_status(submit_status)
     if category is not None or assignment_type is not None:
         cat = category
         typ = assignment_type
@@ -217,8 +217,8 @@ def update_assignment(
         add("due_time", due_time)
     if submit_date is not None:
         add("submit_date", submit_date)
-    if status is not None:
-        add("status", status)
+    if submit_status is not None:
+        add("submit_status", submit_status)
 
     if not sets:
         return 0
@@ -229,10 +229,10 @@ def update_assignment(
     with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
         return execute(cur, sql, tuple(params))
 
-def update_status(assignment_id: str, status: Status) -> int:
-    _validate_status(status)
+def update_submit_status(assignment_id: str, submit_status: Status) -> int:
+    _validate_submit_status(submit_status)
     with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
-        return execute(cur, "UPDATE ASSIGNMENTS SET status=%s WHERE assignment_id=%s", (status, assignment_id))
+        return execute(cur, "UPDATE ASSIGNMENTS SET submit_status=%s WHERE assignment_id=%s", (submit_status, assignment_id))
 
 def delete_assignment(assignment_id: str) -> int:
     with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:

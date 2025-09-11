@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS assignments (
     due_date DATE NOT NULL,
     due_time TIME DEFAULT '23:59:00' NOT NULL,
     submit_date DATE,
-    status ENUM(
+    submit_status ENUM(
         'Not Started', 'In Progress', 'Done', 'Skipped'
     ) NOT NULL DEFAULT 'Not Started',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS assignments (
     ) ON DELETE CASCADE ON UPDATE CASCADE,
     INDEX idx_asg_module_due (module_id, due_date),
     INDEX idx_asg_module_cat_due (module_id, category, due_date),
-    INDEX idx_asg_module_status (module_id, status)
+    INDEX idx_asg_module_submit_status (module_id, submit_status)
 ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS marks (

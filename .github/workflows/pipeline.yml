@@ -138,6 +138,9 @@ jobs:
           path: .cache/lint-baseline
           key: lint-baseline-v1
 
+      - name: Ensure baseline dir
+        run: mkdir -p .cache/lint-baseline
+
       - name: Decide scope
         id: scope
         shell: bash
@@ -266,8 +269,10 @@ jobs:
           fi
 
       - name: Mark baseline
-        if: steps.scope.outputs.first_run == 'true'
-        run: echo "ok" > .cache/lint-baseline/marker
+        if: steps.scope.outputs.first_run == 'true' && success()
+        run: |
+          mkdir -p .cache/lint-baseline
+          printf 'ok' > .cache/lint-baseline/marker
 
       - name: Summary
         if: always()

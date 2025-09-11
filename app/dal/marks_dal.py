@@ -30,7 +30,7 @@ def get_mark_by_assignment(assignment_id: str) -> Optional[dict]:
 def list_marks_for_module(module_id: str) -> list[dict]:
     sql = """
     SELECT mk.mark_id, mk.assignment_id, mk.weight, mk.score,
-           a.category, a.assignment_type, a.assignment_title, a.due_date, a.due_time, a.status
+           a.category, a.assignment_type, a.assignment_title, a.due_date, a.due_time, a.submit_status
     FROM ASSIGNMENTS a
     LEFT JOIN MARKS mk ON mk.assignment_id = a.assignment_id
     WHERE a.module_id = %s

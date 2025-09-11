@@ -54,7 +54,7 @@ INSERT INTO assignments (
     start_date,
     due_date,
     submit_date,
-    status
+    submit_status
 )
 VALUES
 (
@@ -135,7 +135,7 @@ INSERT INTO assignments (
     start_date,
     due_date,
     submit_date,
-    status
+    submit_status
 )
 VALUES
 (

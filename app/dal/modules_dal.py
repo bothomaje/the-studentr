@@ -145,9 +145,9 @@ def list_modules_dashboard(user_id: str) -> list[dict]:
       m.min_assignments, m.min_year_mark, m.exam_subminimum,
       -- counts
       SUM(a.category='Formative')                 AS total_formative,
-      SUM(a.category='Formative' AND a.status='Done') AS formative_done,
+      SUM(a.category='Formative' AND a.submit_status='Done') AS formative_done,
       SUM(a.category='Exam')                      AS total_exams,
-      SUM(a.category='Exam' AND a.status='Done')  AS exams_done,
+      SUM(a.category='Exam' AND a.submit_status='Done')  AS exams_done,
       -- weighted category averages (NULL if no scored marks)
       ROUND(
         CASE WHEN SUM(CASE WHEN a.category='Formative' AND mk.score IS NOT NULL THEN mk.weight END) > 0
