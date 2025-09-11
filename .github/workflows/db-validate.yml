@@ -117,10 +117,10 @@ jobs:
             mid = fetch_one(c, "SELECT module_id FROM MODULES WHERE user_id=%s LIMIT 1", (uid,))["module_id"]
 
           aid = create_assignment(module_id=mid, category="Formative", assignment_type="Quiz",
-                                  title="CI Marks", due_date=date.today())
+                                  assignment_title="CI Marks", due_date=date.today())
           try:
             upsert_mark(assignment_id=aid, weight=25.0, score=None)
-            upsert_mark(assignment_id=aid, weight=25.0, score=75.0)  # idempotent update
+            upsert_mark(assignment_id=aid, weight=25.0, score=75.0)
             avg = compute_category_averages(mid)
             assert "year_mark" in avg
             print("Marks DAL OK — avg:", avg)
