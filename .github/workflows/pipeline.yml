@@ -1,6 +1,7 @@
+---
 name: Pipeline
 
-on:
+"on":
   push:
     branches: [main]
   pull_request:
@@ -25,6 +26,11 @@ jobs:
       sh_files: ${{ steps.filter.outputs.sh_files }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install jq for summaries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
 
       - name: Paths filter
         id: filter
@@ -59,29 +65,25 @@ jobs:
       - name: Summary
         run: |
           {
-            echo "## Change detection";
-            echo "";
-            echo "- Python changed: \
-              **${{ steps.filter.outputs.py }}**";
-            echo "- DB/DAL/config changed: \
-              **${{ steps.filter.outputs.db }}**";
-            echo "- UML changed: \
-              **${{ steps.filter.outputs.uml }}**";
-            echo "- UI/Logic changed: \
-              **${{ steps.filter.outputs.ui }}**";
-            echo "";
-            echo "<details><summary>Changed Python files</summary>";
-            echo "";
-            echo '${{ steps.filter.outputs.py_files }}' | jq -r '.[]?';
-            echo "</details>";
-            echo "<details><summary>Changed YAML files</summary>";
-            echo "";
-            echo '${{ steps.filter.outputs.yaml_files }}' | jq -r '.[]?';
-            echo "</details>";
-            echo "<details><summary>Changed Shell scripts</summary>";
-            echo "";
-            echo '${{ steps.filter.outputs.sh_files }}' | jq -r '.[]?';
-            echo "</details>";
+            cat <<'EOF'
+            - Python changed: **${{ steps.filter.outputs.py }}**
+            - DB/DAL/config changed: **${{ steps.filter.outputs.db }}**
+            - UML changed: **${{ steps.filter.outputs.uml }}**
+            - UI/Logic changed: **${{ steps.filter.outputs.ui }}**
+            <details><summary>Changed Python files</summary>
+            EOF
+            echo '${{ steps.filter.outputs.py_files }}' | jq -r '.[]?'
+            cat <<'EOF'
+            </details>
+            <details><summary>Changed YAML files</summary>
+            EOF
+            echo '${{ steps.filter.outputs.yaml_files }}' | jq -r '.[]?'
+            cat <<'EOF'
+            </details>
+            <details><summary>Changed Shell scripts</summary>
+            EOF
+            echo '${{ steps.filter.outputs.sh_files }}' | jq -r '.[]?'
+            echo "</details>"
           } >> "$GITHUB_STEP_SUMMARY"
 
   lint:
@@ -104,9 +106,10 @@ jobs:
 
       - name: Install linters
         run: |
-          pip install ruff==0.6.*  # fast Python linter
           python -m pip install --upgrade pip
-          sudo apt-get update && sudo apt-get install -y yamllint shellcheck
+          pip install ruff==0.6.*
+          sudo apt-get update
+          sudo apt-get install -y yamllint shellcheck jq
 
       - name: Lint baseline cache
         id: lintcache
@@ -115,84 +118,95 @@ jobs:
           path: .cache/lint-baseline
           key: lint-baseline-v1
 
-      - name: Decide scope and write summary
+      - name: Decide scope
         id: scope
         shell: bash
         run: |
           FIRST_RUN="false"
-          [[ "${{ steps.lintcache.outputs.cache-hit }}" != "true" ]] && \
+          if [ "${{ steps.lintcache.outputs.cache-hit }}" != "true" ]; then
             FIRST_RUN="true"
+          fi
           echo "first_run=$FIRST_RUN" >> "$GITHUB_OUTPUT"
-          echo "## Lint scope" >> "$GITHUB_STEP_SUMMARY"
-          [[ "$FIRST_RUN" == "true" ]] && \
-          echo "First run: full repo." >> "$GITHUB_STEP_SUMMARY" || \
-          echo "Changed files only." >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## Lint scope"
+            if [ "$FIRST_RUN" = "true" ]; then
+              echo "First run: full repo."
+            else
+              echo "Subsequent run: changed files only."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Run ruff
+      - name: Run ruff (full)
         if: steps.scope.outputs.first_run == 'true'
         run: ruff check .
 
-      - name: Run ruff on changed Python files
+      - name: Run ruff (changed)
         if: steps.scope.outputs.first_run != 'true' && env.PY_CHANGED == 'true'
         run: |
-          python - << 'PY'
+          python - <<'PY'
           import json, os, subprocess
-          files = json.loads(os.environ.get("PY_FILES","[]"))
+          files = json.loads(os.environ.get("PY_FILES", "[]"))
           if files:
-            subprocess.check_call(["ruff","check",*files])
+              subprocess.check_call(["ruff", "check", *files])
           else:
-            print("No changed Python files")
+              print("No changed Python files")
           PY
 
-      - name: YAML lint
+      - name: YAML lint (full)
         if: steps.scope.outputs.first_run == 'true'
         run: yamllint -s .
 
-      - name: YAML lint on changed files
+      - name: YAML lint (changed)
         if: steps.scope.outputs.first_run != 'true' && env.YAML_FILES != ''
         run: |
-          python - << 'PY'
+          python - <<'PY'
           import json, os, subprocess
-          files = json.loads(os.environ.get("YAML_FILES","[]"))
+          files = json.loads(os.environ.get("YAML_FILES", "[]"))
           if files:
-            subprocess.check_call(["yamllint","-s",*files])
+              subprocess.check_call(["yamllint", "-s", *files])
           else:
-            print("No changed YAML files")
+              print("No changed YAML files")
           PY
 
-      - name: ShellCheck
+      - name: ShellCheck (full)
         if: steps.scope.outputs.first_run == 'true'
         run: |
           shopt -s globstar nullglob
           files=( **/*.sh )
-          if (( ${#files[@]} )); then shellcheck "${files[@]}"; \
-            else echo "No shell scripts."; fi
+          if (( ${#files[@]} )); then
+            shellcheck "${files[@]}"
+          else
+            echo "No shell scripts."
+          fi
 
-      - name: ShellCheck on changed scripts
+      - name: ShellCheck (changed)
         if: steps.scope.outputs.first_run != 'true' && env.SH_FILES != ''
         run: |
-          python - << 'PY'
+          python - <<'PY'
           import json, os, subprocess
-          files = json.loads(os.environ.get("SH_FILES","[]"))
+          files = json.loads(os.environ.get("SH_FILES", "[]"))
           if files:
-            subprocess.check_call(["shellcheck", *files])
+              subprocess.check_call(["shellcheck", *files])
           else:
-            print("No changed shell scripts")
+              print("No changed shell scripts")
           PY
 
       - name: Mark baseline
         if: steps.scope.outputs.first_run == 'true'
         run: echo "ok" > .cache/lint-baseline/marker
 
-      - name: Summary
+      - name: Summary – lint
         if: always()
         run: |
-          echo "### Lint finished ✅" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Lint finished: **${{ job.status }}**" >> "$GITHUB_STEP_SUMMARY"
 
   plantuml:
     name: Render UML
     needs: lint
-    if: ${{ needs.detect.outputs.uml_changed == 'true' }}
+    if: >-
+      ${{
+        needs.detect.outputs.uml_changed == 'true'
+      }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -200,7 +214,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Graphviz
-        run: sudo apt-get update && sudo apt-get install -y graphviz
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -211,13 +227,14 @@ jobs:
       - name: Download PlantUML
         run: |
           curl -L -o plantuml.jar \
-          https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar
+            https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar
 
       - name: Render .puml to .svg
         run: |
-          find docs/diagrams -name '*.puml' -print0 | while IFS= read -r -d '' f; do
-            java -jar plantuml.jar -tsvg "$f"
-          done
+          find docs/diagrams -name '*.puml' -print0 \
+            | while IFS= read -r -d '' f; do
+                java -jar plantuml.jar -tsvg "$f";
+              done
 
       - name: Commit rendered SVGs
         uses: stefanzweifel/git-auto-commit-action@v5
@@ -225,13 +242,17 @@ jobs:
           commit_message: "chore(diagrams): render PlantUML"
           file_pattern: docs/diagrams/*.svg
 
-      - name: Summary
-        run: echo "### PlantUML rendered and committed ✅" >> "$GITHUB_STEP_SUMMARY"
+      - name: Summary – PlantUML
+        run: |
+          echo "### PlantUML rendered and committed ✅" >> "$GITHUB_STEP_SUMMARY"
 
   db-validate:
     name: Validate Data Model
     needs: lint
-    if: needs.detect.outputs.db_changed == 'true'
+    if: >-
+      ${{
+        needs.detect.outputs.db_changed == 'true'
+      }}
     runs-on: ubuntu-latest
     services:
       mysql:
@@ -243,7 +264,9 @@ jobs:
           - 3306:3306
         options: >-
           --health-cmd="mysqladmin ping -h 127.0.0.1 -p$MYSQL_ROOT_PASSWORD"
-          --health-interval=5s --health-timeout=5s --health-retries=30
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
     env:
       SA_DB_HOST: 127.0.0.1
       SA_DB_PORT: 3306
@@ -260,7 +283,9 @@ jobs:
           cache-dependency-path: 'requirements.txt'
 
       - name: Build deps for mysqlclient
-        run: sudo apt-get update && sudo apt-get install -y libmysqlclient-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libmysqlclient-dev
 
       - name: Install python deps
         run: pip install -r requirements.txt
@@ -280,15 +305,21 @@ jobs:
       - name: Unit tests
         run: pytest -q
 
-      - name: Summary
+      - name: Summary – Data model validation
         if: always()
         run: |
-          echo "### Data model validation finished with status: **${{ job.status }}**" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Data model validation: **${{ job.status }}**" \
+            >> "$GITHUB_STEP_SUMMARY"
 
   ui-logic-validate:
     name: Validate UI & Logic
     needs: [lint, db-validate]
-    if: needs.detect.outputs.ui_logic_changed == 'true' && (needs.detect.outputs.db_changed != 'true' || needs.db-validate.result == 'success')
+    if: >-
+      ${{
+        needs.detect.outputs.ui_logic_changed == 'true' &&
+        (needs.detect.outputs.db_changed != 'true' ||
+         needs.db-validate.result == 'success')
+      }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -309,18 +340,22 @@ jobs:
 
       - name: UI/logic tests
         run: |
-          # Adjust test selection as you add UI tests
           pytest -q tests -k "not db and not schema"
 
-      - name: Summary
+      - name: Summary – UI/Logic
         if: always()
         run: |
-          echo "### UI/Logic validation finished with status: **${{ job.status }}**" >> "$GITHUB_STEP_SUMMARY"
+          echo "### UI/Logic validation: **${{ job.status }}**" \
+            >> "$GITHUB_STEP_SUMMARY"
 
   build-macos:
     name: Build macOS app
     needs: [lint, db-validate, ui-logic-validate]
-    if: ${{ (needs.ui-logic-validate.result == 'success') || (needs.detect.outputs.ui_logic_changed != 'true') }}
+    if: >-
+      ${{
+        (needs.ui-logic-validate.result == 'success') ||
+        (needs.detect.outputs.ui_logic_changed != 'true')
+      }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -343,7 +378,8 @@ jobs:
           APP_NAME: the-studentr
         run: |
           mkdir -p dist
-          pyinstaller --noconfirm --windowed --name "$APP_NAME" "$APP_ENTRY"
+          pyinstaller --noconfirm --windowed \
+            --name "$APP_NAME" "$APP_ENTRY"
           echo "Built app at dist/$APP_NAME.app"
 
       - name: Create DMG
@@ -366,8 +402,10 @@ jobs:
             dist/*.dmg
           if-no-files-found: warn
 
-      - name: Summary
+      - name: Summary – Build
         if: always()
         run: |
-          echo "### macOS build finished with status: **${{ job.status }}**" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Artifacts: .app bundle and (if available) .dmg" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "### macOS build: **${{ job.status }}**"
+            echo "- Artifacts: .app bundle and (if available) .dmg"
+          } >> "$GITHUB_STEP_SUMMARY"
