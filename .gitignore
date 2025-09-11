@@ -6,6 +6,7 @@
 
 # python caches
 __pycache__/
+.pytest_cache/
 
 # OS extras
 .DS_Store

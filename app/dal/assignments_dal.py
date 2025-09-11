@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, time, timedelta
-from typing import Optional, Iterable, Literal
+from datetime import date, time
+from typing import Optional, Literal
 
 import MySQLdb
 from app.dal.base import db_conn, db_cursor, fetch_all, fetch_one, execute, transaction
@@ -203,14 +203,22 @@ def update_assignment(
         sets.append(f"{col}=%s")
         params.append(val)
 
-    if category is not None: add("category", category)
-    if assignment_type is not None: add("assignment_type", assignment_type)
-    if assignment_title is not None: add("assignment_title", assignment_title)
-    if start_date is not None: add("start_date", start_date)
-    if due_date is not None: add("due_date", due_date)
-    if due_time is not None: add("due_time", due_time)
-    if submit_date is not None: add("submit_date", submit_date)
-    if status is not None: add("status", status)
+    if category is not None:
+        add("category", category)
+    if assignment_type is not None:
+        add("assignment_type", assignment_type)
+    if assignment_title is not None:
+        add("assignment_title", assignment_title)
+    if start_date is not None:
+        add("start_date", start_date)
+    if due_date is not None:
+        add("due_date", due_date)
+    if due_time is not None:
+        add("due_time", due_time)
+    if submit_date is not None:
+        add("submit_date", submit_date)
+    if status is not None:
+        add("status", status)
 
     if not sets:
         return 0

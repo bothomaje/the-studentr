@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Optional, Iterable
+from typing import Optional
 
 import MySQLdb
 from app.dal.base import db_conn, db_cursor, fetch_all, fetch_one, execute, transaction
@@ -101,13 +101,20 @@ def update_module(
         sets.append(f"{col}=%s")
         params.append(val)
 
-    if module_code is not None: add("module_code", module_code)
-    if module_name is not None: add("module_name", module_name)
-    if year_mark_weight is not None: add("year_mark_weight", year_mark_weight)
-    if exam_weight is not None: add("exam_weight", exam_weight)
-    if min_assignments is not None: add("min_assignments", min_assignments)
-    if min_year_mark is not None: add("min_year_mark", min_year_mark)
-    if exam_subminimum is not None: add("exam_subminimum", exam_subminimum)
+    if module_code is not None:
+        add("module_code", module_code)
+    if module_name is not None:
+        add("module_name", module_name)
+    if year_mark_weight is not None:
+        add("year_mark_weight", year_mark_weight)
+    if exam_weight is not None:
+        add("exam_weight", exam_weight)
+    if min_assignments is not None:
+        add("min_assignments", min_assignments)
+    if min_year_mark is not None:
+        add("min_year_mark", min_year_mark)
+    if exam_subminimum is not None:
+        add("exam_subminimum", exam_subminimum)
 
     if not sets:
         return 0

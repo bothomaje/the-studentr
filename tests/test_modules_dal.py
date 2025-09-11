@@ -1,4 +1,3 @@
-import uuid
 from app.dal import modules_dal, users_dal
 
 def test_modules_dashboard_and_crud(db_conn, db_tx):

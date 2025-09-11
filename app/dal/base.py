@@ -3,14 +3,16 @@ from __future__ import annotations
 import os
 from contextlib import contextmanager
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Iterable, Optional, Sequence
+from typing import Any, Optional, Sequence
 
 import MySQLdb
 import MySQLdb.cursors
 
-class NotFoundError(RuntimeError): pass
-class ForbiddenError(RuntimeError): pass
+class NotFoundError(RuntimeError):
+    pass
+
+class ForbiddenError(RuntimeError):
+    pass
 
 @dataclass(frozen=True)
 class DBConfig:

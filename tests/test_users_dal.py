@@ -1,4 +1,3 @@
-import uuid
 from app.dal import users_dal
 
 def test_users_crud_and_verify(db_conn, db_tx):

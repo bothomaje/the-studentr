@@ -4,13 +4,12 @@ import uuid
 from typing import Optional
 
 import MySQLdb
-from MySQLdb import IntegrityError
 
-from app.dal.base import db_conn, db_cursor, fetch_one, fetch_all, execute, transaction
+from app.dal.base import db_conn, db_cursor, fetch_one, execute, transaction
 
 try:
     import bcrypt
-except Exception as e:
+except Exception:
     bcrypt = None
 
 class UserAlreadyExists(Exception):

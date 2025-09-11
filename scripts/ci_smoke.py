@@ -1,9 +1,14 @@
-import sys, uuid, datetime as dt
+import sys
+import datetime as dt
 from app.dal.base import connect
 from app.dal import users_dal, modules_dal, assignments_dal, marks_dal
 
-def ok(msg): print(f"[PASS] {msg}")
-def fail(msg): print(f"[FAIL] {msg}"); sys.exit(1)
+def ok(msg):
+    print(f"[PASS] {msg}")
+
+def fail(msg):
+    print(f"[FAIL] {msg}")
+    sys.exit(1)
 
 def main():
     conn = connect()
@@ -17,7 +22,8 @@ def main():
         ok("users")
 
         mid = modules_dal.create_module(user_id=uid, module_code="CISMK", module_name="CI Smoke", year_mark_weight=40, exam_weight=60, min_assignments=1)
-        if not modules_dal.get_module_by_id(mid, uid): fail("modules: get_module_by_id")
+        if not modules_dal.get_module_by_id(mid, uid):
+            fail("modules: get_module_by_id")
         if not any(x["module_id"] == mid for x in modules_dal.list_modules_dashboard(uid)):
             fail("modules: dashboard")
         ok("modules")

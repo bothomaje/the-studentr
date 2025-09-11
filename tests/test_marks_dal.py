@@ -1,4 +1,4 @@
-import uuid, datetime as dt
+import datetime as dt
 from app.dal import users_dal, modules_dal, assignments_dal, marks_dal
 
 def test_marks_aggregates_and_weights(db_conn, db_tx):

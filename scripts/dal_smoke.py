@@ -1,5 +1,6 @@
 from __future__ import annotations
-import os, sys
+import os
+import sys
 from app.dal.base import db_conn, fetch_all, fetch_one, ping
 
 def main():

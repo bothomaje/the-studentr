@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import uuid
-from typing import Optional, Tuple
+from typing import Optional
 
 import MySQLdb
-from app.dal.base import db_conn, db_cursor, fetch_all, fetch_one, execute, transaction, insert_one
+from app.dal.base import db_conn, db_cursor, fetch_all, fetch_one, execute, transaction
 
 def _validate_weight(weight: float) -> None:
     if weight is None or weight < 0 or weight > 100:
