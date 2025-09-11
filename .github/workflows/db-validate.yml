@@ -109,7 +109,7 @@ jobs:
           from datetime import date
           from app.dal.base import db_conn, fetch_one
           from app.dal.assignments_dal import create_assignment
-          from app.dal.marks_dal import upsert_mark, update_mark_score, compute_category_averages, delete_mark_by_assignment
+          from app.dal.marks_dal import insert_mark, update_mark_score, compute_category_averages, delete_mark_by_assignment
 
           with db_conn() as c:
             uid = fetch_one(c, "SELECT user_id FROM USERS LIMIT 1")["user_id"]
@@ -117,8 +117,8 @@ jobs:
 
           aid = create_assignment(module_id=mid, category="Formative", assignment_type="Quiz", assignment_title="CI Marks", due_date=date.today())
           try:
-            upsert_mark(assignment_id=aid, weight=25.0, score=None)
-            upsert_mark(assignment_id=aid, weight=25.0, score=75.0)
+            insert_mark(assignment_id=aid, weight=25.0, score=None)
+            insert_mark(assignment_id=aid, weight=25.0, score=75.0)
             avg = compute_category_averages(mid)
             assert "year_mark" in avg
             print("Marks DAL OK — avg:", avg)

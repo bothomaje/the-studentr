@@ -72,8 +72,7 @@ def list_assignments_for_module(
     SELECT
       a.assignment_id, a.module_id, a.category, a.assignment_type,
       a.assignment_title, a.start_date, a.due_date, a.due_time,
-      a.submit_date, a.submit_time, a.status, a.venue, a.notes,
-      a.created_at, a.updated_at
+      a.submit_date, a.status, a.created_at, a.updated_at
       {select_marks}
     FROM ASSIGNMENTS a
     {join}
@@ -98,7 +97,7 @@ def list_upcoming_for_user(
     sql = f"""
     SELECT
       a.assignment_id, a.category, a.assignment_type, a.assignment_title,
-      a.due_date, a.due_time, a.status, a.venue,
+      a.due_date, a.due_time, a.status,
       m.module_id, m.module_code, m.module_name,
       mk.weight, mk.score
     FROM MODULES m
@@ -134,12 +133,9 @@ def create_assignment(
     assignment_title: str,
     start_date: Optional[date] = None,
     due_date: date,
-    due_time: Optional[time] = None,   # if None and schema has a default, DB will fill
+    due_time: Optional[time] = None,
     submit_date: Optional[date] = None,
-    submit_time: Optional[time] = None,
     status: Status = "Not Started",
-    venue: Optional[str] = None,
-    notes: Optional[str] = None,
 ) -> str:
     _validate_status(status)
     _validate_category_type(category, assignment_type)
@@ -152,11 +148,11 @@ def create_assignment(
                 cur,
                 "INSERT INTO ASSIGNMENTS "
                 "(assignment_id, module_id, category, assignment_type, assignment_title, "
-                " start_date, due_date, due_time, submit_date, submit_time, status, venue, notes) "
-                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                " start_date, due_date, due_time, submit_date, status) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                 (
                     assignment_id, module_id, category, assignment_type, assignment_title,
-                    start_date, due_date, due_time, submit_date, submit_time, status, venue, notes,
+                    start_date, due_date, due_time, submit_date, status,
                 ),
             )
         except MySQLdb.IntegrityError as e:
@@ -175,10 +171,7 @@ def update_assignment(
     due_date: Optional[date] = None,
     due_time: Optional[time] = None,
     submit_date: Optional[date] = None,
-    submit_time: Optional[time] = None,
     status: Optional[Status] = None,
-    venue: Optional[str] = None,
-    notes: Optional[str] = None,
 ) -> int:
     if status is not None:
         _validate_status(status)
@@ -208,10 +201,7 @@ def update_assignment(
     if due_date is not None: add("due_date", due_date)
     if due_time is not None: add("due_time", due_time)
     if submit_date is not None: add("submit_date", submit_date)
-    if submit_time is not None: add("submit_time", submit_time)
     if status is not None: add("status", status)
-    if venue is not None: add("venue", venue)
-    if notes is not None: add("notes", notes)
 
     if not sets:
         return 0
