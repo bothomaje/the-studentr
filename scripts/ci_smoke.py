@@ -17,12 +17,12 @@ def main():
         ok("users")
 
         mid = modules_dal.create_module(user_id=uid, module_code="CISMK", module_name="CI Smoke", year_mark_weight=40, exam_weight=60, min_assignments=1)
-        if not modules_dal.get_module_by_id(mid): fail("modules: get_module_by_id")
+        if not modules_dal.get_module_by_id(mid, uid): fail("modules: get_module_by_id")
         if not any(x["module_id"] == mid for x in modules_dal.list_modules_dashboard(uid)):
             fail("modules: dashboard")
         ok("modules")
 
-        aid = assignments_dal.create_assignment(module_id=mid, assignment_title="FA1", category="Formative", assignment_type="Quiz", due_date=dt.date.today(), status="Not Started")
+        aid = assignments_dal.create_assignment(user_id=uid, module_id=mid, assignment_title="FA1", category="Formative", assignment_type="Quiz", due_date=dt.date.today(), status="Not Started")
         marks_dal.insert_mark(assignment_id=aid, weight=10, score=None)
         marks_dal.update_mark_score(assignment_id=aid, score=75)
         # if assignments_dal.get_assignment_by_id(aid)["score"] not in ("Green", "Orange", "Yellow", "Red"):
