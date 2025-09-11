@@ -8,6 +8,7 @@ def main():
     if not ping():
         print("Unable to connect with current SA_DB_* settings.", file=sys.stderr)
         sys.exit(2)
+    print("Config:", {k: os.getenv(k) for k in ["SA_DB_HOST","SA_DB_PORT","SA_DB_USER","SA_DB_NAME"]})
     print("Connected to MySQL.")
 
     with db_conn() as conn:

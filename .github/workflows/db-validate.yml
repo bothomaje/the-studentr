@@ -18,13 +18,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  mysql:
+  db-validate:
+    name: Validate Data Model
     runs-on: ubuntu-latest
     services:
       mysql:
         image: mysql:9.0
         env:
           MYSQL_ROOT_PASSWORD: ${{ secrets.CI_DB_ROOT_PASS }}
+          MYSQL_DATABASE: the_studentr
         ports:
           - 3306:3306
         options: >-
@@ -41,7 +43,8 @@ jobs:
       SA_DB_NAME: the_studentr
       
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout branch
+        uses: actions/checkout@v4
 
       - name: Python
         uses: actions/setup-python@v5
@@ -66,6 +69,4 @@ jobs:
         run: python -m scripts.ci_smoke
 
       - name: Run unit tests
-        run: |
-          pip install pytest
-          pytest -q
+        run: pytest -q

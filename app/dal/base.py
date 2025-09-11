@@ -9,6 +9,9 @@ from typing import Any, Iterable, Optional, Sequence
 import MySQLdb
 import MySQLdb.cursors
 
+class NotFoundError(RuntimeError): pass
+class ForbiddenError(RuntimeError): pass
+
 @dataclass(frozen=True)
 class DBConfig:
     host: str
@@ -111,9 +114,9 @@ def insert_one(
         update_cols: Sequence[str],
 ) -> int:
     placeholders = ", ".join(["%s"]*len(columns))
-    cols = ", ".join(f"'{c}'" for c in columns)
-    update_expr = ", ".join(f"'{c}' = VALUES('{c}')" for c in update_cols)
-    sql = f"INSERT INTO '{table}' ({cols}) VALUES ({placeholders}) ON DUPLICATE KEY UPDATE {update_expr}"
+    cols = ", ".join(f"{c}" for c in columns)
+    update_expr = ", ".join(f"{c} = new.{c}" for c in update_cols)
+    sql = f"INSERT INTO {table} ({cols}) VALUES ({placeholders}) AS new ON DUPLICATE KEY UPDATE {update_expr}"
     with db_cursor(conn, dict_rows=False) as cur:
         return cur.execute(sql, tuple(values))
     

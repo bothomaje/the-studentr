@@ -21,9 +21,9 @@ def list_modules_for_user(user_id: str) -> list[dict]:
             (user_id,),
         )
 
-def get_module_by_id(module_id: str) -> Optional[dict]:
+def get_module_by_id(module_id: str, user_id: str) -> Optional[dict]:
     with db_conn() as conn:
-        return fetch_one(conn, "SELECT * FROM MODULES WHERE module_id=%s", (module_id,))
+        return fetch_one(conn, "SELECT * FROM MODULES WHERE module_id=%s AND user_id=%s", (module_id, user_id),)
 
 def get_module_by_code(user_id: str, module_code: str) -> Optional[dict]:
     with db_conn() as conn:
@@ -77,6 +77,7 @@ def create_module(
 
 def update_module(
     module_id: str,
+    user_id: str,
     *,
     module_code: Optional[str] = None,
     module_name: Optional[str] = None,
@@ -111,8 +112,9 @@ def update_module(
     if not sets:
         return 0
 
-    sql = "UPDATE MODULES SET " + ", ".join(sets) + " WHERE module_id=%s"
+    sql = "UPDATE MODULES SET " + ", ".join(sets) + " WHERE module_id=%s AND user_id=%s"
     params.append(module_id)
+    params.append(user_id)
 
     with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
         try:

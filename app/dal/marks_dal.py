@@ -78,7 +78,7 @@ def delete_mark_by_assignment(assignment_id: str) -> int:
     with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
         return execute(cur, "DELETE FROM MARKS WHERE assignment_id=%s", (assignment_id,))
 
-def compute_category_averages(module_id: str) -> dict:
+def compute_category_averages(module_id: str, user_id: str) -> dict:
     sql = """
     SELECT
       SUM(CASE WHEN a.category='Formative' AND mk.score IS NOT NULL THEN mk.weight END)   AS f_w,
@@ -86,11 +86,12 @@ def compute_category_averages(module_id: str) -> dict:
       SUM(CASE WHEN a.category='Exam' AND mk.score IS NOT NULL THEN mk.weight END)        AS e_w,
       SUM(CASE WHEN a.category='Exam' AND mk.score IS NOT NULL THEN mk.score*mk.weight END)      AS e_ws
     FROM ASSIGNMENTS a
+    JOIN MODULES m ON m.module_id=a.module_id
     LEFT JOIN MARKS mk ON mk.assignment_id=a.assignment_id
-    WHERE a.module_id=%s
+    WHERE a.module_id=%s AND m.user_id=%s
     """
     with db_conn() as conn:
-        r = fetch_one(conn, sql, (module_id,))
+        r = fetch_one(conn, sql, (module_id, user_id),)
     def _avg(ws, w) -> Optional[float]:
         if ws is None or w in (None, 0):
             return None
@@ -100,14 +101,15 @@ def compute_category_averages(module_id: str) -> dict:
         "exam_mark": _avg(r["e_ws"], r["e_w"]),
     }
 
-def weight_totals_by_category(module_id: str) -> dict:
+def weight_totals_by_category(module_id: str, user_id: str) -> dict:
     sql = """
     SELECT a.category, COALESCE(SUM(mk.weight), 0) AS w_sum
     FROM ASSIGNMENTS a
+    JOIN MODULES m ON m.mudole_id=a.module_id
     LEFT JOIN MARKS mk ON mk.assignment_id=a.assignment_id
-    WHERE a.module_id=%s
+    WHERE a.module_id=%s AND m.user_id=%s
     GROUP BY a.category
     """
     with db_conn() as conn:
-        rows = fetch_all(conn, sql, (module_id,))
+        rows = fetch_all(conn, sql, (module_id, user_id),)
     return {r["category"]: float(r["w_sum"]) for r in rows}

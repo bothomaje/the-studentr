@@ -4,6 +4,7 @@ from pathlib import Path
 def load_env(path: str | None = None, override: bool = False) -> bool:
     env_path = Path(path) if path else Path(".") / ".env"
     if not env_path.exists():
+        print(".env not found")
         return False
     
     for raw in env_path.read_text(encoding="utf-8").splitlines():

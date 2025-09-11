@@ -6,12 +6,12 @@ def test_marks_aggregates_and_weights(db_conn, db_tx):
     mod_id = modules_dal.create_module(user_id=uid, module_code="COS2626",
                                        module_name="Networks", year_mark_weight=40, exam_weight=60,
                                        min_assignments=1)
-    a1 = assignments_dal.create_assignment(module_id=mod_id, assignment_title="FA1", category="Formative", assignment_type="Quiz", due_date=dt.date.today(), status="Done")
-    a2 = assignments_dal.create_assignment(module_id=mod_id, assignment_title="FA2", category="Formative", assignment_type="Project", due_date=dt.date.today(), status="Done")
-    a3 = assignments_dal.create_assignment(module_id=mod_id, assignment_title="EX1", category="Exam", assignment_type="Written exam", due_date=dt.date.today(), status="Done")
-    marks_dal.insert_mark(a1, weight=10, score=80)
-    marks_dal.insert_mark(a2, weight=20, score=50)
-    marks_dal.insert_mark(a3, weight=100, score=60)
-    averages = marks_dal.compute_category_averages(module_id=mod_id)
+    a1 = assignments_dal.create_assignment(user_id=uid, module_id=mod_id, assignment_title="FA1", category="Formative", assignment_type="Quiz", due_date=dt.date.today(), status="Done")
+    a2 = assignments_dal.create_assignment(user_id=uid, module_id=mod_id, assignment_title="FA2", category="Formative", assignment_type="Practical", due_date=dt.date.today(), status="Done")
+    a3 = assignments_dal.create_assignment(user_id=uid, module_id=mod_id, assignment_title="EX1", category="Exam", assignment_type="Written exam", due_date=dt.date.today(), status="Done")
+    marks_dal.insert_mark(assignment_id=a1, weight=10, score=80)
+    marks_dal.insert_mark(assignment_id=a2, weight=20, score=50)
+    marks_dal.insert_mark(assignment_id=a3, weight=100, score=60)
+    averages = marks_dal.compute_category_averages(module_id=mod_id, user_id=uid)
     assert 0 <= averages["year_mark"] <= 100 and 0 <= averages["exam_mark"] <= 100
     assert averages["year_mark"] == 30

@@ -10,10 +10,14 @@ def run_sql_file(cur, path: Path):
     for statement in (s.strip() for s in sql_text.split(";")):
         if statement:
             try:
-                cur.execute(statement + ";")
+                cur.execute(statement)
             except MySQLdb.OperationalError as e:
-                continue
-                raise
+                code = getattr(e, "args", [None])[0]
+                known = {1007, 1050, 1061}
+                if code in known:
+                    print(f"[idempotent-ok] {code} on: {statement[:120]!r}")
+                else:
+                    raise
 
 # setup db main function
 def main():

@@ -6,7 +6,7 @@ def test_users_crud_and_verify(db_conn, db_tx):
     email = "test_users_dal@example.com"
     firstname = "Test"
     surname = "One"
-    user_id = users_dal.create_user(user_id=user_id, username=username, email=email, password="P@ssw0rd!", first_name=firstname, surname=surname)
+    user_id = users_dal.create_user(username=username, email=email, password="P@ssw0rd!", first_name=firstname, surname=surname)
     got = users_dal.get_user_by_username(username)
     assert got and got["user_id"] == user_id
     ok = users_dal.verify_credentials(username=username, plain_password="P@ssw0rd!")

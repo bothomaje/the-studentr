@@ -1,6 +1,5 @@
-import uuid
 import pytest
-from app.dal.base import connect, transaction
+from app.dal.base import connect
 
 @pytest.fixture(scope="function")
 def db_conn():
@@ -8,13 +7,16 @@ def db_conn():
     try:
         yield conn
     finally:
-        try:
-            conn.close()
-        except Exception:
-            pass
+        conn.close()
 
 @pytest.fixture(scope="function")
 def db_tx(db_conn):
-    with transaction(db_conn) as cur:
-        yield cur
-        raise pytest.skip.Exception("ROLLBACK")
+    prev = db_conn.get_autocommit()
+    if prev:
+        db_conn.autocommit(False)
+    try:
+        yield db_conn
+        db_conn.rollback()  # ensure clean DB
+    finally:
+        if prev:
+            db_conn.autocommit(True)

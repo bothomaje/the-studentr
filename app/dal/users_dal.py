@@ -17,17 +17,17 @@ def _require_bcrypt():
     if bcrypt is None:
         raise RuntimeError("Missing dependency (bcrypt)")
     
-def hash_password(plain: str, rounds: int = 12) -> str:
+def hash_password(plain: str, rounds: int = 12) -> bytes:
     _require_bcrypt()
-    h = bcrypt.hashpw(plain.encode("utf-8"), bcrypt.gensalt(rounds))
-    return h.decode("utf-8")
+    return bcrypt.hashpw(plain.encode("utf-8"), bcrypt.gensalt(rounds))
 
-def verify_password(plain: str, hashed: str) -> bool:
+def verify_password(plain: str, hashed: bytes) -> bool:
     _require_bcrypt()
+    pwd_hash = hash_password(plain)
     if not hashed:
         return False
     try:
-        return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
+        return bcrypt.checkpw(pwd_hash, hashed)
     except ValueError:
         return False
 

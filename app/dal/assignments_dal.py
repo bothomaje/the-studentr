@@ -14,7 +14,7 @@ Category = Literal["Formative", "Exam"]
 STATUS_VALUES: set[str]   = {"Not Started", "In Progress", "Done", "Skipped"}
 CATEGORY_VALUES: set[str] = {"Formative", "Exam"}
 TYPES_BY_CATEGORY: dict[str, set[str]] = {
-    "Formative": {"Quiz", "Written assignment", "Project"},
+    "Formative": {"Quiz", "Written assignment", "Practical"},
     "Exam": {"Quiz", "Written exam", "Take-Home exam"},
 }
 
@@ -39,20 +39,21 @@ def _colour_from(status: str, score: Optional[float]) -> str:
         return "Orange"
     return "Green" if score >= 50.0 else "Red"
 
-def get_assignment_by_id(assignment_id: str) -> Optional[dict]:
+def get_assignment_by_id(assignment_id: str, user_id: str) -> Optional[dict]:
     with db_conn() as conn:
-        return fetch_one(conn, "SELECT * FROM ASSIGNMENTS WHERE assignment_id=%s", (assignment_id,))
+        return fetch_one(conn, "SELECT * FROM ASSIGNMENTS WHERE assignment_id=%s AND user_id=%s", (assignment_id, user_id),)
 
 def list_assignments_for_module(
     module_id: str,
+    user_id: str,
     *,
     status: Optional[Status] = None,
     category: Optional[Category] = None,
     include_marks: bool = True,
     order_by_due: bool = True,
 ) -> list[dict]:
-    params: list = [module_id]
-    where = ["a.module_id=%s"]
+    params: list = [module_id, user_id]
+    where = ["a.module_id=%s", "m.user_id=%s"]
 
     if status:
         _validate_status(status)
@@ -64,7 +65,8 @@ def list_assignments_for_module(
         where.append("a.category=%s")
         params.append(category)
 
-    join = "LEFT JOIN MARKS mk ON mk.assignment_id=a.assignment_id" if include_marks else ""
+    join = "JOIN MODULES m ON m.module_id = a.module_id "
+    join = join + ("LEFT JOIN MARKS mk ON mk.assignment_id=a.assignment_id" if include_marks else "")
     select_marks = ", mk.weight, mk.score" if include_marks else ""
     order = "ORDER BY a.due_date, a.due_time" if order_by_due else "ORDER BY a.created_at"
 
@@ -127,6 +129,7 @@ def count_by_status_for_module(module_id: str) -> dict[str, int]:
 
 def create_assignment(
     *,
+    user_id: str,
     module_id: str,
     category: Category,
     assignment_type: str,
@@ -148,11 +151,12 @@ def create_assignment(
                 cur,
                 "INSERT INTO ASSIGNMENTS "
                 "(assignment_id, module_id, category, assignment_type, assignment_title, "
-                " start_date, due_date, due_time, submit_date, status) "
-                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                "start_date, due_date, due_time, submit_date, status) "
+                "SELECT %s, m.module_id, %s, %s, %s, %s, %s, %s, %s, %s "
+                "FROM MODULES m WHERE m.module_id=%s AND user_id=%s",
                 (
-                    assignment_id, module_id, category, assignment_type, assignment_title,
-                    start_date, due_date, due_time, submit_date, status,
+                    assignment_id, category, assignment_type, assignment_title,
+                    start_date, due_date, due_time, submit_date, status, module_id, user_id,
                 ),
             )
         except MySQLdb.IntegrityError as e:

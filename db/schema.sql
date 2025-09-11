@@ -7,8 +7,7 @@ CREATE TABLE IF NOT EXISTS USERS (
   user_id CHAR(36) CHARACTER SET ascii,
   username VARCHAR(100) UNIQUE NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
-  -- update VARCHAR to VARBINARY once hash is implemented
-  password_hash VARCHAR(255) NOT NULL,
+  password_hash VARBINARY(255) NOT NULL,
   first_name VARCHAR(100) NOT NULL,
   surname VARCHAR(100) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -62,7 +61,11 @@ CREATE TABLE IF NOT EXISTS MARKS (
   FOREIGN KEY (assignment_id) REFERENCES ASSIGNMENTS(assignment_id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB;
 
+DROP INDEX IF EXISTS idx_modules_user ON MODULES;
 CREATE INDEX idx_modules_user ON MODULES(user_id);
+DROP INDEX IF EXISTS idx_asg_module_due ON ASSIGNMENTS;
 CREATE INDEX idx_asg_module_due ON ASSIGNMENTS(module_id, due_date);
+DROP INDEX IF EXISTS idx_asg_module_cat_due ON ASSIGNMENTS;
 CREATE INDEX idx_asg_module_cat_due ON ASSIGNMENTS(module_id, category, due_date);
+DROP INDEX IF EXISTS idx_asg_module_status ON ASSIGNMENTS;
 CREATE INDEX idx_asg_module_status ON ASSIGNMENTS(module_id, status);
