@@ -7,6 +7,24 @@ name: Pipeline
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      run_all:
+        description: | 
+          "Force run all jobs (ignore change detection)"
+        required: false
+        type: boolean
+        default: false
+      full_lint:
+        description: "Force full-repo lint scope"
+        required: false
+        type: boolean
+        default: false
+      enforce_sqlfluff:
+        description: "Fail on SQLFluff violations (0/1)"
+        required: false
+        type: choice
+        options: ["0","1"]
+        default: "0"
 
 concurrency:
   group: pipeline-${{ github.ref }}
@@ -70,6 +88,8 @@ jobs:
 
       - name: Summary
         env:
+          RUN_ALL: ${{ github.event.inputs.run_all || 'false' }}
+          FULL_LINT: ${{ github.event.inputs.full_lint || 'false' }}
           PY_CHANGED: ${{ steps.filter.outputs.py }}
           DB_CHANGED: ${{ steps.filter.outputs.db }}
           UML_CHANGED: ${{ steps.filter.outputs.uml }}
@@ -83,6 +103,8 @@ jobs:
         run: |
           {
             printf '%s\n' '## Change detection' ''
+            printf '%s\n' "- Manual override (run_all): **$RUN_ALL**"
+            printf '%s\n' "- Force full lint: **$FULL_LINT**" ''
             printf '%s\n' "- Python changed: **$PY_CHANGED**"
             printf '%s\n' "- DB/DAL/config changed: **$DB_CHANGED**"
             printf '%s\n' "- UML changed: **$UML_CHANGED**"
@@ -113,7 +135,8 @@ jobs:
       PY_FILES: ${{ needs.detect.outputs.py_files }}
       YAML_FILES: ${{ needs.detect.outputs.yaml_files }}
       SH_FILES: ${{ needs.detect.outputs.sh_files }}
-      ENFORCE_SQLFLUFF: "0"
+      ENFORCE_SQLFLUFF: ${{ github.event.inputs.enforce_sqlfluff || '0' }}
+      FORCE_FULL_LINT: ${{ github.event.inputs.full_lint || 'false' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -144,18 +167,23 @@ jobs:
       - name: Decide scope
         id: scope
         shell: bash
+        env:
+          FORCE_FULL_LINT: ${{ env.FORCE_FULL_LINT }}
         run: |
           FIRST_RUN="false"
           if [ "${{ steps.lintcache.outputs.cache-hit }}" != "true" ]; then
+            FIRST_RUN="true"
+          fi
+          if [ "$FORCE_FULL_LINT" = "true" ]; then
             FIRST_RUN="true"
           fi
           echo "first_run=$FIRST_RUN" >> "$GITHUB_OUTPUT"
           {
             echo "## Lint scope"
             if [ "$FIRST_RUN" = "true" ]; then
-              echo "First run: full repo."
+              echo "Full repo (baseline or manual force)."
             else
-              echo "Subsequent run: changed files only."
+              echo "Changed files only."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -307,6 +335,7 @@ jobs:
     needs: lint
     if: >-
       ${{
+        github.event.inputs.run_all == 'true' ||
         needs.detect.outputs.uml_changed == 'true'
       }}
     runs-on: ubuntu-latest
@@ -353,6 +382,7 @@ jobs:
     needs: lint
     if: >-
       ${{
+        github.event.inputs.run_all == 'true' ||
         needs.detect.outputs.db_changed == 'true'
       }}
     runs-on: ubuntu-latest
@@ -418,9 +448,12 @@ jobs:
     needs: [lint, db-validate]
     if: >-
       ${{
-        needs.detect.outputs.ui_logic_changed == 'true' &&
-        (needs.detect.outputs.db_changed != 'true' ||
-        needs['db-validate'].result == 'success')
+        github.event.inputs.run_all == 'true' ||
+        (
+          needs.detect.outputs.ui_logic_changed == 'true' &&
+          (needs.detect.outputs.db_changed != 'true' ||
+          needs['db-validate'].result == 'success')
+        )
       }}
     runs-on: ubuntu-latest
     steps:
@@ -455,8 +488,11 @@ jobs:
     needs: [lint, db-validate, ui-logic-validate]
     if: >-
       ${{
-        (needs['ui-logic-validate'].result == 'success') ||
-        (needs.detect.outputs.ui_logic_changed != 'true')
+        github.event.inputs.run_all == 'true' ||
+        (
+          (needs['ui-logic-validate'].result == 'success') ||
+          (needs.detect.outputs.ui_logic_changed != 'true')
+        )
       }}
     runs-on: macos-latest
     steps:
