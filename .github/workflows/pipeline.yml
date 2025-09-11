@@ -237,8 +237,9 @@ jobs:
           fi
 
       - name: SQLFluff (changed)
-        if: steps.scope.outputs.first_run != 'true' && \
-            needs.detect.outputs.sql_changed == 'true'
+        if: >
+          steps.scope.outputs.first_run != 'true' &&
+          needs.detect.outputs.sql_changed == 'true'
         env:
           SQL_FILES: ${{ needs.detect.outputs.sql_files }}
         run: |
