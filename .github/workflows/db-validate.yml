@@ -61,6 +61,9 @@ jobs:
 
       - name: Setup DB
         run: python -m scripts.setup_db
+      
+      - name: Add repo root to PYTHONPATH
+        run: echo "PYTHONPATH=$PWD" >> $GITHUB_ENV
 
       - name: DAL smoke
         run: python -m scripts.dal_smoke
