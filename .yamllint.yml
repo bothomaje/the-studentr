@@ -1,0 +1,19 @@
+---
+# yamllint configuration for the-studentr project
+# Allows reasonable line lengths for GitHub Actions workflow files
+# while maintaining other YAML quality checks
+
+extends: default
+
+rules:
+  line-length:
+    max: 120  # Increased from default 80 to accommodate CI/CD workflows
+    level: error
+
+  # Keep other defaults for quality
+  comments:
+    min-spaces-from-content: 1
+  indentation:
+    spaces: 2
+  truthy:
+    allowed-values: ['true', 'false']
