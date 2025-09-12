@@ -4,7 +4,7 @@ This document provides comprehensive technical documentation for the CI/CD pipel
 
 ## Pipeline Overview
 
-The CI pipeline consists of 7 main jobs that execute based on change detection and dependency relationships:
+The CI pipeline consists of 8 main jobs that execute based on change detection and dependency relationships:
 
 1. **detect** - Change detection and file filtering
 2. **lint** - Code quality validation across multiple languages
@@ -12,7 +12,8 @@ The CI pipeline consists of 7 main jobs that execute based on change detection a
 4. **db-validate** - Database schema and DAL testing
 5. **ui-logic-validate** - UI and business logic testing
 6. **build-macos** - macOS application build and packaging
-7. **pipeline-summary** - Overall pipeline status aggregation
+7. **build-windows** - Windows application build and packaging
+8. **pipeline-summary** - Overall pipeline status aggregation
 
 ## Pipeline Triggers
 
@@ -229,7 +230,38 @@ SA_DB_NAME=the_studentr
 - **Success**: Uploads built .app and .dmg files
 - **Failure**: Uploads `macOS-build-failure-logs` with build and DMG logs
 
-### 7. Pipeline Summary (`pipeline-summary`)
+### 7. Windows Application Build (`build-windows`)
+
+**Purpose**: Builds standalone Windows application executable.
+
+**Dependencies**: Requires `lint`, `db-validate`, and `ui-logic-validate` job success.
+
+**Trigger Condition**: Executes when UI validation succeeds OR no UI changes detected, with manual override.
+
+**Technology Stack**:
+- **Platform**: windows-latest runner
+- **Python**: 3.11 with pip caching
+- **Build Tool**: PyInstaller 6.6.*
+
+**Build Process**:
+
+#### Application Executable
+- **Entry Point**: `app/main.py`
+- **Mode**: Windowed (GUI application)
+- **Output**: `dist/the-studentr.exe` and supporting files
+- **Logging**: Detailed build log in `build.log`
+
+**Error Handling**: 
+- PyInstaller failures halt the job with detailed error logging
+- Uses bash shell for consistent error handling across platforms
+
+**Summary Generation**: Provides build status, file listings, and detailed error information.
+
+**Artifact Collection**: 
+- **Success**: Uploads built .exe and supporting files
+- **Failure**: Uploads `Windows-build-failure-logs` with build logs
+
+### 8. Pipeline Summary (`pipeline-summary`)
 
 **Purpose**: Aggregates results from all jobs and provides comprehensive pipeline status.
 
@@ -247,6 +279,7 @@ Displays status for each job:
 - 🗄️ Database Validation
 - 🖥️ UI/Logic Validation
 - 🍎 macOS Build
+- 🪟 Windows Build
 
 **Status Indicators**:
 - ✅ Success: Job completed successfully
@@ -335,12 +368,12 @@ Smart execution based on file changes reduces unnecessary work:
 Jobs execute in parallel where dependencies allow:
 - Lint, PlantUML, and Database validation can run concurrently after change detection
 - UI validation waits for both lint and database validation
-- Build waits for all validation jobs
+- Both macOS and Windows builds run in parallel after all validation jobs complete
 
 ### Resource Management
 Efficient resource utilization:
 - Cancels in-progress runs when new commits pushed
-- Uses appropriate runner types (Ubuntu for testing, macOS for builds)
+- Uses appropriate runner types (Ubuntu for testing, macOS/Windows for platform-specific builds)
 - Strategic caching reduces setup time
 
 ## Maintenance and Extensions
@@ -368,6 +401,21 @@ When enhancing error reporting:
 ---
 
 ## Changelog
+
+### 2025-01-12 - Added Windows Build Support
+
+**Added:**
+- New `build-windows` job for Windows application builds
+- Windows executable compilation using PyInstaller on windows-latest runner
+- Parallel execution of macOS and Windows builds (independent from each other)
+- Windows build status integration in pipeline summary
+- Windows build artifacts collection (`Windows-build` and `Windows-build-failure-logs`)
+- Cross-platform build validation ensuring application works on both major platforms
+
+**Enhanced:**
+- Pipeline now supports multi-platform application distribution
+- Updated documentation to reflect 8-job pipeline structure
+- Improved parallel execution efficiency with independent platform builds
 
 ### 2025-09-12 - Enhanced Error Reporting and Job Summaries
 

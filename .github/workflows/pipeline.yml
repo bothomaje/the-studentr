@@ -959,9 +959,117 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
+  build-windows:
+    name: Build Windows app
+    needs: [lint, db-validate, ui-logic-validate]
+    if: >-
+      ${{
+        github.event.inputs.run_all == 'true' ||
+        (
+          (needs['ui-logic-validate'].result == 'success') ||
+          (needs.detect.outputs.ui_logic_changed != 'true')
+        )
+      }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
+
+      - name: Install build deps
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller==6.6.*
+
+      - name: Build Windows executable
+        env:
+          APP_ENTRY: app/main.py
+          APP_NAME: the-studentr
+        shell: bash
+        run: |
+          set +e
+          mkdir -p dist
+          pyinstaller --noconfirm --windowed \
+            --name "$APP_NAME" "$APP_ENTRY" > build.log 2>&1
+          BUILD_EXIT_CODE=$?
+          set -e
+
+          if [ $BUILD_EXIT_CODE -ne 0 ]; then
+            echo "BUILD_FAILED=true" >> "$GITHUB_ENV"
+            echo "PyInstaller build failed. Check build.log for details."
+            cat build.log
+            exit $BUILD_EXIT_CODE
+          else
+            echo "BUILD_FAILED=false" >> "$GITHUB_ENV"
+            echo "Built app at dist/$APP_NAME.exe"
+            ls -la dist/
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-build
+          path: |
+            dist/*.exe
+            dist/${{ env.APP_NAME }}/
+          if-no-files-found: warn
+
+      - name: Upload build artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-build-failure-logs
+          path: |
+            build.log
+          if-no-files-found: ignore
+
+      - name: Summary – Build
+        if: always()
+        shell: bash
+        run: |
+          {
+            printf '## Windows Build: **%s**\n\n' "${{ job.status }}"
+
+            # Build information
+            printf '### 🔨 PyInstaller Build\n'
+            if [ "${BUILD_FAILED:-false}" = "true" ]; then
+              printf '**Status:** ❌ Failed\n\n'
+              printf '<details><summary>Build error details</summary>\n\n'
+              printf '```\n'
+              cat build.log 2>/dev/null || echo "No build log found"
+              printf '\n```\n'
+              printf '</details>\n'
+            else
+              printf '**Status:** ✅ Passed\n'
+              if [ -d "dist" ]; then
+                printf '**Built files:**\n'
+                printf '```\n'
+                ls -la dist/ 2>/dev/null || echo "No dist directory found"
+                printf '\n```\n'
+              fi
+            fi
+
+            printf '\n---\n'
+            if [ "${{ job.status }}" = "success" ]; then
+              printf '🎉 Windows build completed successfully!\n'
+              printf '- Artifacts: .exe executable and supporting files\n'
+            else
+              printf '❌ Windows build failed. Please review the details above.\n'
+              printf '\n**Next steps:**\n'
+              printf '1. Check PyInstaller compatibility with dependencies\n'
+              printf '2. Verify all Python modules are properly bundled\n'
+              printf '3. Test build locally: `pip install pyinstaller && pyinstaller --windowed app/main.py`\n'
+              printf '4. Check for missing system libraries or Qt dependencies\n'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
   pipeline-summary:
     name: Pipeline Summary
-    needs: [detect, lint, plantuml, db-validate, ui-logic-validate, build-macos]
+    needs: [detect, lint, plantuml, db-validate, ui-logic-validate, build-macos, build-windows]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -972,7 +1080,8 @@ jobs:
           PLANTUML_STATUS: ${{ needs.plantuml.result }}
           DB_VALIDATE_STATUS: ${{ needs.db-validate.result }}
           UI_LOGIC_STATUS: ${{ needs.ui-logic-validate.result }}
-          BUILD_STATUS: ${{ needs.build-macos.result }}
+          BUILD_MACOS_STATUS: ${{ needs.build-macos.result }}
+          BUILD_WINDOWS_STATUS: ${{ needs.build-windows.result }}
         run: |
           {
             printf '# 🚀 Pipeline Summary\n\n'
@@ -1023,19 +1132,28 @@ jobs:
               printf '| 🖥️ UI/Logic Validation | ⏭️ Skipped | No UI changes |\n'
             fi
 
-            # Build
-            if [ "$BUILD_STATUS" = "success" ]; then
+            # Build - macOS
+            if [ "$BUILD_MACOS_STATUS" = "success" ]; then
               printf '| 🍎 macOS Build | ✅ Success | Application built successfully |\n'
-            elif [ "$BUILD_STATUS" = "failure" ]; then
+            elif [ "$BUILD_MACOS_STATUS" = "failure" ]; then
               printf '| 🍎 macOS Build | ❌ Failed | Build errors occurred |\n'
             else
               printf '| 🍎 macOS Build | ⏭️ Skipped | No build trigger |\n'
             fi
 
+            # Build - Windows
+            if [ "$BUILD_WINDOWS_STATUS" = "success" ]; then
+              printf '| 🪟 Windows Build | ✅ Success | Application built successfully |\n'
+            elif [ "$BUILD_WINDOWS_STATUS" = "failure" ]; then
+              printf '| 🪟 Windows Build | ❌ Failed | Build errors occurred |\n'
+            else
+              printf '| 🪟 Windows Build | ⏭️ Skipped | No build trigger |\n'
+            fi
+
             printf '\n## Overall Status\n\n'
 
             # Determine overall status
-            if [[ "$LINT_STATUS" == "failure" || "$DB_VALIDATE_STATUS" == "failure" || "$UI_LOGIC_STATUS" == "failure" || "$BUILD_STATUS" == "failure" ]]; then
+            if [[ "$LINT_STATUS" == "failure" || "$DB_VALIDATE_STATUS" == "failure" || "$UI_LOGIC_STATUS" == "failure" || "$BUILD_MACOS_STATUS" == "failure" || "$BUILD_WINDOWS_STATUS" == "failure" ]]; then
               printf '❌ **Pipeline Failed**\n\n'
               printf 'One or more critical jobs failed. Please review the individual job summaries above for detailed error information.\n\n'
               printf '### Recommended Actions:\n'
