@@ -454,7 +454,9 @@ jobs:
 
             if [ -f sqlfluff.json ]; then
               printf '\n<details><summary>Files with issues</summary>\n\n'
-              jq -r '.[] as $f | $f.violations[] | "- \($f.filepath):\(.line_no):\(.line_pos) \(.code): \(.description)"' sqlfluff.json >> "$GITHUB_STEP_SUMMARY"
+              jq -r '.[] as $f | $f.violations[] |
+                "- \($f.filepath):\(.line_no):\(.line_pos) \(.code): \(.description)"' \
+                sqlfluff.json >> "$GITHUB_STEP_SUMMARY"
               printf '\n</details>\n'
             else
               printf '\n_No SQL changes or report absent._\n'
@@ -469,7 +471,8 @@ jobs:
               printf '\n**Next steps:**\n'
               printf '1. Review the specific violations in each section\n'
               printf '2. Fix the issues locally\n'
-              printf '3. Re-run the linters: `ruff check .`, `yamllint .`, `shellcheck **/*.sh`, `sqlfluff lint db scripts`\n'
+              printf '3. Re-run the linters: `ruff check .`, `yamllint .`, `shellcheck **/*.sh`,\n'
+              printf '   `sqlfluff lint db scripts`\n'
               printf '4. Commit and push your fixes\n'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
@@ -755,7 +758,8 @@ jobs:
       - name: UI/logic tests
         run: |
           set +e
-          pytest -q tests -k "not db and not schema" --tb=short --junitxml=ui-pytest-results.xml > ui-pytest-output.log 2>&1
+          pytest -q tests -k "not db and not schema" --tb=short \
+            --junitxml=ui-pytest-results.xml > ui-pytest-output.log 2>&1
           UI_PYTEST_EXIT_CODE=$?
           set -e
 
@@ -1153,9 +1157,12 @@ jobs:
             printf '\n## Overall Status\n\n'
 
             # Determine overall status
-            if [[ "$LINT_STATUS" == "failure" || "$DB_VALIDATE_STATUS" == "failure" || "$UI_LOGIC_STATUS" == "failure" || "$BUILD_MACOS_STATUS" == "failure" || "$BUILD_WINDOWS_STATUS" == "failure" ]]; then
+            if [[ "$LINT_STATUS" == "failure" || "$DB_VALIDATE_STATUS" == "failure" ||\
+                  "$UI_LOGIC_STATUS" == "failure" || "$BUILD_MACOS_STATUS" == "failure" ||\
+                  "$BUILD_WINDOWS_STATUS" == "failure" ]]; then
               printf '❌ **Pipeline Failed**\n\n'
-              printf 'One or more critical jobs failed. Please review the individual job summaries above for detailed error information.\n\n'
+              printf 'One or more critical jobs failed. Please review the individual job summaries\n'
+              printf 'above for detailed error information.\n\n'
               printf '### Recommended Actions:\n'
               printf '1. Check the failing job details for specific errors\n'
               printf '2. Download failure artifacts for detailed logs\n'
