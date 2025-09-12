@@ -3,13 +3,34 @@
 .env.*
 !.env.example
 .venv/
+venv/
 
 # python caches
 __pycache__/
 .pytest_cache/
+*.pyc
+*.pyo
+*.pyd
+
+# build artifacts
+build/
+dist/
+*.egg-info/
+.cache/
+
+# CI artifacts
+sqlfluff.json
+plantuml.jar
 
 # OS extras
 .DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # Local-only
 db/local_*.sql

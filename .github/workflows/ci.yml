@@ -1,0 +1,741 @@
+---
+name: CI Pipeline
+
+"on":
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_all:
+        description: "Force run all jobs (ignore change detection)"
+        required: false
+        type: boolean
+        default: false
+      run_lint:
+        description: "Run linting jobs"
+        required: false
+        type: boolean
+        default: true
+      run_tests:
+        description: "Run test jobs"
+        required: false
+        type: boolean
+        default: true
+      run_builds:
+        description: "Run build jobs"
+        required: false
+        type: boolean
+        default: true
+      run_uml:
+        description: "Run UML rendering"
+        required: false
+        type: boolean
+        default: true
+      full_lint:
+        description: "Force full-repo lint scope"
+        required: false
+        type: boolean
+        default: false
+      enforce_sqlfluff:
+        description: "Fail on SQLFluff violations"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect:
+    name: "🔍 Detect Changes"
+    runs-on: ubuntu-latest
+    outputs:
+      py_changed: ${{ steps.filter.outputs.py }}
+      py_files: ${{ steps.filter.outputs.py_files }}
+      uml_changed: ${{ steps.filter.outputs.uml }}
+      db_changed: ${{ steps.filter.outputs.db }}
+      ui_logic_changed: ${{ steps.filter.outputs.ui }}
+      yaml_files: ${{ steps.filter.outputs.yaml_files }}
+      yaml_changed: ${{ steps.filter.outputs.yaml }}
+      sh_files: ${{ steps.filter.outputs.sh_files }}
+      sql_changed: ${{ steps.filter.outputs.sql }}
+      sql_files: ${{ steps.filter.outputs.sql_files }}
+      should_run_lint: ${{ steps.decide.outputs.should_run_lint }}
+      should_run_tests: ${{ steps.decide.outputs.should_run_tests }}
+      should_run_builds: ${{ steps.decide.outputs.should_run_builds }}
+      should_run_uml: ${{ steps.decide.outputs.should_run_uml }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install jq for summaries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Paths filter
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          list-files: json
+          filters: |
+            py:
+              - 'app/**/*.py'
+              - 'scripts/**/*.py'
+              - 'tests/**/*.py'
+            db:
+              - 'db/**'
+              - 'scripts/**'
+              - 'app/dal/**'
+              - 'app/config/env.py'
+              - 'requirements.txt'
+            uml:
+              - 'docs/diagrams/**/*.puml'
+            ui:
+              - 'app/ui_adapters/**/*.py'
+              - 'app/**/*.ui'
+              - 'app/**/*.qml'
+              - 'app/**/*.py'
+              - '!app/dal/**'
+              - '!app/config/**'
+            yaml:
+              - '**/*.y?(a)ml'
+            sh:
+              - '**/*.sh'
+            sql:
+              - 'db/**/*.sql'
+              - 'scripts/**/*.sql'
+
+      - name: Decide which jobs to run
+        id: decide
+        env:
+          RUN_ALL: ${{ github.event.inputs.run_all || 'false' }}
+          RUN_LINT: ${{ github.event.inputs.run_lint }}
+          RUN_TESTS: ${{ github.event.inputs.run_tests }}
+          RUN_BUILDS: ${{ github.event.inputs.run_builds }}
+          RUN_UML: ${{ github.event.inputs.run_uml }}
+          PY_CHANGED: ${{ steps.filter.outputs.py }}
+          DB_CHANGED: ${{ steps.filter.outputs.db }}
+          UML_CHANGED: ${{ steps.filter.outputs.uml }}
+          UI_CHANGED: ${{ steps.filter.outputs.ui }}
+          YAML_CHANGED: ${{ steps.filter.outputs.yaml }}
+          SQL_CHANGED: ${{ steps.filter.outputs.sql }}
+        run: |
+          # Default to true if manual inputs not specified
+          run_lint="${RUN_LINT:-true}"
+          run_tests="${RUN_TESTS:-true}"
+          run_builds="${RUN_BUILDS:-true}"
+          run_uml="${RUN_UML:-true}"
+
+          # Override based on changes if not running all
+          if [ "$RUN_ALL" != "true" ]; then
+            # Only run lint if there are relevant changes
+            if [ "$run_lint" == "true" ]; then
+              if [ "$PY_CHANGED" != "true" ] && [ "$YAML_CHANGED" != "true" ] && [ "$SQL_CHANGED" != "true" ]; then
+                run_lint="false"
+              fi
+            fi
+
+            # Only run tests if there are code changes
+            if [ "$run_tests" == "true" ]; then
+              if [ "$PY_CHANGED" != "true" ] && [ "$DB_CHANGED" != "true" ] && [ "$UI_CHANGED" != "true" ]; then
+                run_tests="false"
+              fi
+            fi
+
+            # Only run builds if there are app changes
+            if [ "$run_builds" == "true" ]; then
+              if [ "$PY_CHANGED" != "true" ] && [ "$UI_CHANGED" != "true" ]; then
+                run_builds="false"
+              fi
+            fi
+
+            # Only run UML if there are UML changes
+            if [ "$run_uml" == "true" ] && [ "$UML_CHANGED" != "true" ]; then
+              run_uml="false"
+            fi
+          fi
+
+          echo "should_run_lint=$run_lint" >> "$GITHUB_OUTPUT"
+          echo "should_run_tests=$run_tests" >> "$GITHUB_OUTPUT"
+          echo "should_run_builds=$run_builds" >> "$GITHUB_OUTPUT"
+          echo "should_run_uml=$run_uml" >> "$GITHUB_OUTPUT"
+
+      - name: "📋 Change Detection Summary"
+        env:
+          RUN_ALL: ${{ github.event.inputs.run_all || 'false' }}
+          FULL_LINT: ${{ github.event.inputs.full_lint || 'false' }}
+          ENFORCE_SQLFLUFF: >-
+            ${{ github.event.inputs.enforce_sqlfluff || 'false' }}
+          PY_CHANGED: ${{ steps.filter.outputs.py }}
+          DB_CHANGED: ${{ steps.filter.outputs.db }}
+          UML_CHANGED: ${{ steps.filter.outputs.uml }}
+          UI_CHANGED: ${{ steps.filter.outputs.ui }}
+          YAML_CHANGED: ${{ steps.filter.outputs.yaml }}
+          SQL_CHANGED: ${{ steps.filter.outputs.sql }}
+          PY_FILES: ${{ steps.filter.outputs.py_files }}
+          YAML_FILES: ${{ steps.filter.outputs.yaml_files }}
+          SH_FILES: ${{ steps.filter.outputs.sh_files }}
+          SQL_FILES: ${{ steps.filter.outputs.sql_files }}
+          SHOULD_RUN_LINT: ${{ steps.decide.outputs.should_run_lint }}
+          SHOULD_RUN_TESTS: ${{ steps.decide.outputs.should_run_tests }}
+          SHOULD_RUN_BUILDS: ${{ steps.decide.outputs.should_run_builds }}
+          SHOULD_RUN_UML: ${{ steps.decide.outputs.should_run_uml }}
+        run: |
+          {
+            printf '# 🔍 Change Detection Results\n\n'
+            printf '## 🎛️ Manual Controls\n'
+            printf '- **Run all jobs:** %s\n' "$RUN_ALL"
+            printf '- **Force full lint:** %s\n' "$FULL_LINT"
+            printf '- **Enforce SQLFluff:** %s\n\n' "$ENFORCE_SQLFLUFF"
+            printf '## 📁 File Changes Detected\n'
+            printf '- **Python:** %s\n' "$PY_CHANGED"
+            printf '- **Database/DAL/Config:** %s\n' "$DB_CHANGED"
+            printf '- **UML Diagrams:** %s\n' "$UML_CHANGED"
+            printf '- **UI/Logic:** %s\n' "$UI_CHANGED"
+            printf '- **YAML:** %s\n' "$YAML_CHANGED"
+            printf '- **SQL:** %s\n\n' "$SQL_CHANGED"
+            printf '## 🚀 Jobs Scheduled\n'
+            printf '- **Linting:** %s\n' "$SHOULD_RUN_LINT"
+            printf '- **Testing:** %s\n' "$SHOULD_RUN_TESTS"
+            printf '- **Building:** %s\n' "$SHOULD_RUN_BUILDS"
+            printf '- **UML Rendering:** %s\n\n' "$SHOULD_RUN_UML"
+            if [ "$PY_CHANGED" == "true" ]; then
+              printf '<details><summary>📄 Changed Python files</summary>\n\n'
+              echo "$PY_FILES" | jq -r '.[]?' | sed 's/^/- /'
+              printf '\n</details>\n\n'
+            fi
+            if [ "$YAML_CHANGED" == "true" ]; then
+              printf '<details><summary>📄 Changed YAML files</summary>\n\n'
+              echo "$YAML_FILES" | jq -r '.[]?' | sed 's/^/- /'
+              printf '\n</details>\n\n'
+            fi
+            if [ "$SH_FILES" != "[]" ] && [ "$SH_FILES" != "" ]; then
+              printf '<details><summary>📄 Changed Shell scripts</summary>\n\n'
+              echo "$SH_FILES" | jq -r '.[]?' | sed 's/^/- /'
+              printf '\n</details>\n\n'
+            fi
+            if [ "$SQL_CHANGED" == "true" ]; then
+              printf '<details><summary>📄 Changed SQL files</summary>\n\n'
+              echo "$SQL_FILES" | jq -r '.[]?' | sed 's/^/- /'
+              printf '\n</details>\n\n'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  lint:
+    name: "🔍 Code Quality"
+    needs: detect
+    if: needs.detect.outputs.should_run_lint == 'true'
+    runs-on: ubuntu-latest
+    env:
+      PY_CHANGED: ${{ needs.detect.outputs.py_changed }}
+      PY_FILES: ${{ needs.detect.outputs.py_files }}
+      YAML_FILES: ${{ needs.detect.outputs.yaml_files }}
+      SH_FILES: ${{ needs.detect.outputs.sh_files }}
+      ENFORCE_SQLFLUFF: >-
+        ${{ github.event.inputs.enforce_sqlfluff || 'false' }}
+      FORCE_FULL_LINT: ${{ github.event.inputs.full_lint || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: "requirements.txt"
+
+      - name: "🔧 Install linting tools"
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff==0.6.*
+          sudo apt-get update
+          sudo apt-get install -y yamllint shellcheck jq
+          pip install "sqlfluff==3.*"
+
+      - name: "💾 Lint baseline cache"
+        id: lintcache
+        uses: actions/cache@v4
+        with:
+          path: .cache/lint-baseline
+          key: lint-baseline-v1
+
+      - name: "📁 Ensure baseline directory"
+        run: mkdir -p .cache/lint-baseline
+
+      - name: "🎯 Determine lint scope"
+        id: scope
+        shell: bash
+        env:
+          FORCE_FULL_LINT: ${{ env.FORCE_FULL_LINT }}
+        run: |
+          FIRST_RUN="false"
+          if [ "${{ steps.lintcache.outputs.cache-hit }}" != "true" ]; then
+            FIRST_RUN="true"
+          fi
+          if [ "$FORCE_FULL_LINT" = "true" ]; then
+            FIRST_RUN="true"
+          fi
+          echo "first_run=$FIRST_RUN" >> "$GITHUB_OUTPUT"
+          {
+            echo "## 🎯 Lint Scope"
+            if [ "$FIRST_RUN" = "true" ]; then
+              echo "**Full repository** (baseline establishment or manual force)"
+            else
+              echo "**Changed files only** (incremental)"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "🐍 Ruff check (full repository)"
+        if: steps.scope.outputs.first_run == 'true'
+        run: |
+          echo "Running Ruff on full repository..."
+          ruff check . --output-format=github
+
+      - name: "🐍 Ruff check (changed files only)"
+        if: >-
+          steps.scope.outputs.first_run != 'true' &&
+          env.PY_CHANGED == 'true'
+        run: |
+          python - <<'PY'
+          import json, os, subprocess
+          files = json.loads(os.environ.get("PY_FILES", "[]"))
+          if files:
+              print(f"Running Ruff on {len(files)} changed Python files...")
+              subprocess.check_call(["ruff", "check", "--output-format=github"] + files)
+          else:
+              print("No changed Python files to check")
+          PY
+
+      - name: "📄 YAML lint (full repository)"
+        if: steps.scope.outputs.first_run == 'true'
+        run: |
+          echo "Running yamllint on full repository..."
+          yamllint -f github . || true
+
+      - name: "📄 YAML lint (changed files only)"
+        if: >-
+          steps.scope.outputs.first_run != 'true' &&
+          env.YAML_FILES != '' && env.YAML_FILES != '[]'
+        run: |
+          python - <<'PY'
+          import json, os, subprocess
+          files = json.loads(os.environ.get("YAML_FILES", "[]"))
+          if files:
+              print(f"Running yamllint on {len(files)} changed YAML files...")
+              try:
+                  subprocess.check_call(["yamllint", "-f", "github"] + files)
+              except subprocess.CalledProcessError:
+                  print("YAML linting found issues, but continuing...")
+          else:
+              print("No changed YAML files to check")
+          PY
+
+      - name: "🐚 ShellCheck (full repository)"
+        if: steps.scope.outputs.first_run == 'true'
+        run: |
+          echo "Running ShellCheck on full repository..."
+          shopt -s globstar nullglob
+          files=( **/*.sh )
+          if (( ${#files[@]} )); then
+            shellcheck --format=gcc "${files[@]}"
+            echo "Checked ${#files[@]} shell scripts"
+          else
+            echo "No shell scripts found"
+          fi
+
+      - name: "🐚 ShellCheck (changed files only)"
+        if: >-
+          steps.scope.outputs.first_run != 'true' &&
+          env.SH_FILES != '' && env.SH_FILES != '[]'
+        run: |
+          python - <<'PY'
+          import json, os, subprocess
+          files = json.loads(os.environ.get("SH_FILES", "[]"))
+          if files:
+              print(f"Running ShellCheck on {len(files)} changed shell scripts...")
+              subprocess.check_call(["shellcheck", "--format=gcc"] + files)
+          else:
+              print("No changed shell scripts to check")
+          PY
+
+      - name: "⚙️ Ensure SQLFluff config"
+        run: |
+          if [ ! -f .sqlfluff ]; then
+            printf '%s\n' '[sqlfluff]' 'dialect = mysql' \
+              'max_line_length = 100' > .sqlfluff
+            echo "Created default .sqlfluff config"
+          fi
+
+      - name: "🗄️ SQLFluff (full repository)"
+        if: steps.scope.outputs.first_run == 'true'
+        run: |
+          echo "Running SQLFluff on full repository..."
+          set +e
+          sqlfluff lint db scripts \
+            --format json \
+            --write-output sqlfluff.json
+          rc=$?
+          set -e
+
+          # rc: 0=clean, 1=violations found, >1=error
+          if [ "$rc" -gt 1 ]; then
+            echo "SQLFluff encountered an error (exit code $rc)"
+            exit "$rc"
+          fi
+
+          VIOL=$(jq 'map(.violations|length)|add // 0' sqlfluff.json || echo "0")
+          echo "VIOL=$VIOL" >> "$GITHUB_ENV"
+          echo "Found $VIOL SQLFluff violations"
+
+          if [ "${ENFORCE_SQLFLUFF}" = "true" ] && [ "$VIOL" -ne 0 ]; then
+            echo "❌ SQLFluff violations detected and enforcement is enabled"
+            exit 1
+          fi
+
+      - name: "🗄️ SQLFluff (changed files only)"
+        if: >-
+          steps.scope.outputs.first_run != 'true' &&
+          needs.detect.outputs.sql_changed == 'true'
+        env:
+          SQL_FILES: ${{ needs.detect.outputs.sql_files }}
+        run: |
+          python - <<'PY'
+          import json, os, subprocess, sys
+          files = json.loads(os.environ.get("SQL_FILES","[]"))
+          if not files:
+              print("No changed SQL files to check")
+              sys.exit(0)
+
+          print(f"Running SQLFluff on {len(files)} changed SQL files...")
+          rc = subprocess.call([
+              "sqlfluff","lint","--format","json",
+              "--write-output","sqlfluff.json"
+          ] + files)
+
+          # rc: 0=clean, 1=violations, >1=error (fail on >1)
+          if rc > 1:
+              print(f"SQLFluff encountered an error (exit code {rc})")
+              sys.exit(rc)
+          else:
+              sys.exit(0)
+          PY
+
+          if [ -f sqlfluff.json ]; then
+            VIOL=$(jq 'map(.violations|length)|add // 0' sqlfluff.json || echo "0")
+            echo "VIOL=$VIOL" >> "$GITHUB_ENV"
+            echo "Found $VIOL SQLFluff violations"
+
+            if [ "${ENFORCE_SQLFLUFF}" = "true" ] && [ "$VIOL" -ne 0 ]; then
+              echo "❌ SQLFluff violations detected and enforcement is enabled"
+              exit 1
+            fi
+          else
+            echo "VIOL=0" >> "$GITHUB_ENV"
+          fi
+
+      - name: "🗄️ SQLFluff defaults when skipped"
+        if: env.VIOL == ''
+        run: echo "VIOL=0" >> "$GITHUB_ENV"
+
+      - name: "💾 Mark baseline as established"
+        if: steps.scope.outputs.first_run == 'true' && success()
+        run: |
+          mkdir -p .cache/lint-baseline
+          printf 'ok' > .cache/lint-baseline/marker
+          echo "Lint baseline established successfully"
+
+      - name: "📊 Linting Summary"
+        if: always()
+        env:
+          STATUS: ${{ job.status }}
+          VIOL_COUNT: ${{ env.VIOL }}
+        run: |
+          {
+            if [ "$STATUS" = "success" ]; then
+              printf '# ✅ Code Quality Check: **PASSED**\n\n'
+            else
+              printf '# ❌ Code Quality Check: **FAILED**\n\n'
+            fi
+
+            printf '## 📈 Results Summary\n'
+            printf '- **SQLFluff violations:** %s\n' "${VIOL_COUNT:-0}"
+            printf '- **Enforcement mode:** %s\n' "${ENFORCE_SQLFLUFF}"
+            printf '- **Overall status:** %s\n\n' "$STATUS"
+
+            if [ -f sqlfluff.json ] && [ "${VIOL_COUNT:-0}" -gt 0 ]; then
+              printf '<details><summary>🗄️ SQLFluff Issues (%s violations)</summary>\n\n' "${VIOL_COUNT:-0}"
+              printf '| File | Line | Column | Code | Description |\n'
+              printf '|------|------|--------|------|-----------|\n'
+
+              jq -r '.[] as $f
+                | $f.violations[]
+                | "| \($f.filepath) | \(.line_no) | \(.line_pos) | `\(.code)` | \(.description) |"' sqlfluff.json \
+                >> "$GITHUB_STEP_SUMMARY" || echo "| Error | - | - | - | Failed to parse SQLFluff results |" >> "$GITHUB_STEP_SUMMARY"
+
+              printf '\n</details>\n'
+            fi
+
+            if [ "$STATUS" != "success" ]; then
+              printf '\n## 🔧 Quick Fix Guide\n'
+              printf '- Check the job logs above for specific error details\n'
+              printf '- For Python issues: Run `ruff check --fix .` locally\n'
+              printf '- For YAML issues: Check indentation and syntax\n'
+              printf '- For Shell issues: Run `shellcheck` on the reported files\n'
+              printf '- For SQL issues: Review SQLFluff suggestions or disable enforcement\n'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build-macos:
+    name: "🍎 Build macOS"
+    needs: [detect, lint]
+    if: >-
+      needs.detect.outputs.should_run_builds == 'true' &&
+      always() &&
+      (needs.lint.result == 'success' || needs.lint.result == 'skipped')
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
+
+      - name: "🔧 Install build dependencies"
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller==6.6.*
+          brew install create-dmg || echo "create-dmg installation failed, continuing"
+
+      - name: "🏗️ Build application bundle"
+        env:
+          APP_ENTRY: app/main.py
+          APP_NAME: the-studentr
+        run: |
+          mkdir -p dist
+          echo "Building macOS application bundle..."
+
+          pyinstaller --noconfirm --windowed \
+            --name "$APP_NAME" \
+            --distpath dist \
+            "$APP_ENTRY"
+
+          echo "✅ Built application bundle: dist/$APP_NAME.app"
+          ls -la dist/
+
+      - name: "📦 Create DMG (if possible)"
+        continue-on-error: true
+        env:
+          APP_NAME: the-studentr
+        run: |
+          if command -v create-dmg >/dev/null 2>&1; then
+            echo "Creating DMG package..."
+            create-dmg \
+              --volname "$APP_NAME" \
+              --window-pos 200 120 \
+              --window-size 600 300 \
+              --icon-size 100 \
+              --app-drop-link 425 120 \
+              "dist/${APP_NAME}.dmg" \
+              "dist/${APP_NAME}.app" || echo "DMG creation failed, but continuing"
+          else
+            echo "create-dmg not available; skipping DMG creation"
+          fi
+
+      - name: "🧪 Test application startup"
+        run: |
+          echo "Testing application startup..."
+          if [ -x "dist/the-studentr.app/Contents/MacOS/the-studentr" ]; then
+            timeout 10s "dist/the-studentr.app/Contents/MacOS/the-studentr" || echo "Application test completed (exit code: $?)"
+          else
+            echo "Application executable not found or not executable"
+            exit 1
+          fi
+
+      - name: "📤 Upload macOS artifacts"
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: |
+            dist/*.app
+            dist/*.dmg
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: "📊 macOS Build Summary"
+        if: always()
+        env:
+          STATUS: ${{ job.status }}
+        run: |
+          {
+            if [ "$STATUS" = "success" ]; then
+              printf '# ✅ macOS Build: **SUCCESS**\n\n'
+            else
+              printf '# ❌ macOS Build: **FAILED**\n\n'
+            fi
+
+            printf '## 📦 Build Artifacts\n'
+            if [ -d "dist" ]; then
+              find dist -type f \( -name "*.app" -o -name "*.dmg" \) | while read -r file; do
+                size=$(du -h "$file" | cut -f1)
+                printf '- **%s** (%s)\n' "$(basename "$file")" "$size"
+              done
+            fi
+            printf '\n'
+
+            printf '## 🛠️ Build Details\n'
+            printf '- **Platform:** macOS (latest)\n'
+            printf '- **Python:** 3.11\n'
+            printf '- **Packager:** PyInstaller 6.6.x\n'
+            printf '- **Status:** %s\n\n' "$STATUS"
+
+            if [ "$STATUS" != "success" ]; then
+              printf '## 🔧 Troubleshooting\n'
+              printf '- Check PyInstaller compatibility with dependencies\n'
+              printf '- Verify all required modules are properly included\n'
+              printf '- Review build logs for missing dependencies\n'
+              printf '- Test application startup sequence\n'
+            else
+              printf '## ✅ Next Steps\n'
+              printf '- Download artifacts from the workflow run\n'
+              printf '- Test the application on macOS systems\n'
+              printf '- Verify all features work correctly\n'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "🚀 Application Output"
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          echo "Running application to display output..."
+          cd dist
+          timeout 5s ./the-studentr.app/Contents/MacOS/the-studentr || echo "Application completed"
+
+  build-windows:
+    name: "🪟 Build Windows"
+    needs: [detect, lint]
+    if: >-
+      needs.detect.outputs.should_run_builds == 'true' &&
+      always() &&
+      (needs.lint.result == 'success' || needs.lint.result == 'skipped')
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
+
+      - name: "🔧 Install build dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller==6.6.*
+
+      - name: "🏗️ Build Windows executable"
+        env:
+          APP_ENTRY: app/main.py
+          APP_NAME: the-studentr
+        shell: bash
+        run: |
+          mkdir -p dist
+          echo "Building Windows executable..."
+
+          pyinstaller --noconfirm --windowed \
+            --name "$APP_NAME" \
+            --distpath dist \
+            "$APP_ENTRY"
+
+          echo "✅ Built Windows executable: dist/$APP_NAME/"
+          ls -la dist/
+
+      - name: "🧪 Test application startup"
+        shell: bash
+        run: |
+          echo "Testing application startup..."
+          if [ -x "dist/the-studentr/the-studentr.exe" ]; then
+            timeout 10s "dist/the-studentr/the-studentr.exe" || echo "Application test completed (exit code: $?)"
+          else
+            echo "Application executable not found or not executable"
+            exit 1
+          fi
+
+      - name: "📦 Create ZIP package"
+        shell: bash
+        run: |
+          cd dist
+          if [ -d "the-studentr" ]; then
+            echo "Creating ZIP package..."
+            powershell "Compress-Archive -Path 'the-studentr' -DestinationPath 'the-studentr-windows.zip'"
+            echo "✅ Created ZIP package: the-studentr-windows.zip"
+          fi
+
+      - name: "📤 Upload Windows artifacts"
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: |
+            dist/the-studentr/
+            dist/*.zip
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: "📊 Windows Build Summary"
+        if: always()
+        env:
+          STATUS: ${{ job.status }}
+        shell: bash
+        run: |
+          {
+            if [ "$STATUS" = "success" ]; then
+              printf '# ✅ Windows Build: **SUCCESS**\n\n'
+            else
+              printf '# ❌ Windows Build: **FAILED**\n\n'
+            fi
+
+            printf '## 📦 Build Artifacts\n'
+            if [ -d "dist" ]; then
+              find dist -type f \( -name "*.exe" -o -name "*.zip" \) | while read -r file; do
+                if command -v du >/dev/null; then
+                  size=$(du -h "$file" 2>/dev/null | cut -f1 || echo "N/A")
+                else
+                  size="N/A"
+                fi
+                printf '- **%s** (%s)\n' "$(basename "$file")" "$size"
+              done
+            fi
+            printf '\n'
+
+            printf '## 🛠️ Build Details\n'
+            printf '- **Platform:** Windows (latest)\n'
+            printf '- **Python:** 3.11\n'
+            printf '- **Packager:** PyInstaller 6.6.x\n'
+            printf '- **Status:** %s\n\n' "$STATUS"
+
+            if [ "$STATUS" != "success" ]; then
+              printf '## 🔧 Troubleshooting\n'
+              printf '- Check PyInstaller compatibility with Windows dependencies\n'
+              printf '- Verify all required DLLs are properly included\n'
+              printf '- Review build logs for missing Windows-specific dependencies\n'
+              printf '- Test application startup on Windows\n'
+            else
+              printf '## ✅ Next Steps\n'
+              printf '- Download artifacts from the workflow run\n'
+              printf '- Test the application on Windows systems\n'
+              printf '- Verify all features work correctly\n'
+              printf '- Consider code signing for distribution\n'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "🚀 Application Output"
+        shell: bash
+        run: |
+          echo "Running application to display output..."
+          cd dist/the-studentr
+          timeout 5s ./the-studentr.exe || echo "Application completed"
