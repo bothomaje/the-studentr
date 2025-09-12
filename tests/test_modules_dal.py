@@ -1,5 +1,8 @@
+import pytest
 from app.dal import modules_dal, users_dal
 
+@pytest.mark.database
+@pytest.mark.dal
 def test_modules_dashboard_and_crud(db_conn, db_tx):
     uid = users_dal.create_user(username="user_modules_test", email="modules_test@x.com", password="heyHey12!", first_name="Test", surname="Two")
     mod_id = modules_dal.create_module(

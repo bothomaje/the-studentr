@@ -1,6 +1,13 @@
 import pytest
 from app.dal.base import connect
 
+# Define pytest markers for test categorization
+def pytest_configure(config):
+    config.addinivalue_line("markers", "database: marks tests that require database connectivity")
+    config.addinivalue_line("markers", "dal: marks tests for Data Access Layer functionality")
+    config.addinivalue_line("markers", "ui: marks tests for User Interface components")
+    config.addinivalue_line("markers", "integration: marks tests that test component integration")
+
 @pytest.fixture(scope="function")
 def db_conn():
     conn = connect()

@@ -1,6 +1,9 @@
 import datetime as dt
+import pytest
 from app.dal import users_dal, modules_dal, assignments_dal, marks_dal
 
+@pytest.mark.database
+@pytest.mark.dal
 def test_assignments_flow_and_colour_rules(db_conn, db_tx):
     uid = users_dal.create_user(username="user_assignments_test", email="assignments_test@x.com", password="A1b2C3d4!", first_name="Test", surname="Three")
     mod_id = modules_dal.create_module(user_id=uid, module_code="INF2611",

@@ -1,6 +1,9 @@
 import datetime as dt
+import pytest
 from app.dal import users_dal, modules_dal, assignments_dal, marks_dal
 
+@pytest.mark.database
+@pytest.mark.dal
 def test_marks_aggregates_and_weights(db_conn, db_tx):
     uid = users_dal.create_user(username="user_marks_test", email="marks_test@x.com", password="Str0ngPwd!", first_name="Test", surname="Four")
     mod_id = modules_dal.create_module(user_id=uid, module_code="COS2626",

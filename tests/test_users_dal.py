@@ -1,5 +1,8 @@
+import pytest
 from app.dal import users_dal
 
+@pytest.mark.database
+@pytest.mark.dal
 def test_users_crud_and_verify(db_conn, db_tx):
     username = "test_users_dal"
     email = "test_users_dal@example.com"

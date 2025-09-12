@@ -760,7 +760,7 @@ jobs:
       - name: UI/logic tests
         run: |
           set +e
-          pytest -q tests -k "not db and not schema" --tb=short \
+          pytest -q tests -m "not database and not dal" --tb=short \
             --junitxml=ui-pytest-results.xml > ui-pytest-output.log 2>&1
           UI_PYTEST_EXIT_CODE=$?
           set -e

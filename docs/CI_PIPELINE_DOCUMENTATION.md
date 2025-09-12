@@ -177,7 +177,7 @@ SA_DB_NAME=the_studentr
 **Technology Stack**:
 - **Python**: 3.11 with pip caching
 - **Testing**: pytest and pytest-qt for PyQt5 UI testing
-- **Scope**: Excludes database and schema tests (`-k "not db and not schema"`)
+- **Scope**: Excludes database and DAL tests (`-m "not database and not dal"`)
 
 **Process**:
 1. Install dependencies including pytest-qt for UI testing
@@ -333,7 +333,7 @@ sqlfluff lint db scripts
 python -m scripts.setup_db && pytest
 
 # UI testing
-pip install pytest pytest-qt && pytest tests -k "not db"
+pip install pytest pytest-qt && pytest tests -m "not database"
 
 # Build testing
 pip install pyinstaller && pyinstaller --windowed app/main.py
