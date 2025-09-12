@@ -1180,8 +1180,8 @@ jobs:
 
             printf '\n### Pipeline Artifacts\n'
             printf 'Available artifacts from this run:\n'
-            printf -- '%s\n' "- **Success artifacts**: Built applications and rendered diagrams\n"
-            printf -- '%s\n' "- **Failure artifacts**: Detailed logs and test results for debugging\n"
+            printf -- '%s\n' "- **Success artifacts**: Built applications and rendered diagrams"
+            printf -- '%s\n' "- **Failure artifacts**: Detailed logs and test results for debugging"
 
             printf '\n---\n'
             printf '_Pipeline completed at %s_\n' "$(date --iso-8601=seconds)"
