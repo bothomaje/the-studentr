@@ -104,28 +104,28 @@ jobs:
           SQL_FILES: ${{ steps.filter.outputs.sql_files }}
         run: |
           {
-            printf '%s\n' '## Change detection' ''
-            printf '%s\n' "- Manual override (run_all): **$RUN_ALL**"
-            printf '%s\n' "- Force full lint: **$FULL_LINT**" ''
-            printf '%s\n' "- Python changed: **$PY_CHANGED**"
-            printf '%s\n' "- DB/DAL/config changed: **$DB_CHANGED**"
-            printf '%s\n' "- UML changed: **$UML_CHANGED**"
-            printf '%s\n' "- UI/Logic changed: **$UI_CHANGED**"
-            printf '%s\n' "- YAML changed: **$YAML_CHANGED**"
-            printf '%s\n' "- SQL changed: **$SQL_CHANGED**"
-            printf '%s\n' ''
-            printf '%s\n' '<details><summary>Changed Python files</summary>' ''
+            printf -- '%s\n' '## Change detection' ''
+            printf -- '%s\n' "- Manual override (run_all): **$RUN_ALL**"
+            printf -- '%s\n' "- Force full lint: **$FULL_LINT**" ''
+            printf -- '%s\n' "- Python changed: **$PY_CHANGED**"
+            printf -- '%s\n' "- DB/DAL/config changed: **$DB_CHANGED**"
+            printf -- '%s\n' "- UML changed: **$UML_CHANGED**"
+            printf -- '%s\n' "- UI/Logic changed: **$UI_CHANGED**"
+            printf -- '%s\n' "- YAML changed: **$YAML_CHANGED**"
+            printf -- '%s\n' "- SQL changed: **$SQL_CHANGED**"
+            printf -- '%s\n' ''
+            printf -- '%s\n' '<details><summary>Changed Python files</summary>' ''
             echo "$PY_FILES" | jq -r '.[]?'
-            printf '%s\n' '</details>'
-            printf '%s\n' '<details><summary>Changed YAML files</summary>' ''
+            printf -- '%s\n' '</details>'
+            printf -- '%s\n' '<details><summary>Changed YAML files</summary>' ''
             echo "$YAML_FILES" | jq -r '.[]?'
-            printf '%s\n' '</details>'
-            printf '%s\n' '<details><summary>Changed Shell scripts</summary>' ''
+            printf -- '%s\n' '</details>'
+            printf -- '%s\n' '<details><summary>Changed Shell scripts</summary>' ''
             echo "$SH_FILES" | jq -r '.[]?'
-            printf '%s\n' '</details>'
-            printf '%s\n' '<details><summary>Changed SQL files</summary>' ''
+            printf -- '%s\n' '</details>'
+            printf -- '%s\n' '<details><summary>Changed SQL files</summary>' ''
             echo "$SQL_FILES" | jq -r '.[]?'
-            printf '%s\n' '</details>'
+            printf -- '%s\n' '</details>'
           } >> "$GITHUB_STEP_SUMMARY"
 
   lint:
