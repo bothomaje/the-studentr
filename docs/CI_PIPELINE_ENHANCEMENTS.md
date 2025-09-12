@@ -1,90 +1,294 @@
-# CI Pipeline Enhancements
+# CI Pipeline Technical Documentation
 
-This document describes the improvements made to the CI pipeline in `.github/workflows/pipeline.yml` to provide better error reporting and job summaries.
+This document provides comprehensive technical documentation for the CI/CD pipeline defined in `.github/workflows/pipeline.yml`. The pipeline orchestrates automated testing, validation, and builds for the the-studentr application.
 
-## Key Improvements
+## Pipeline Overview
 
-### 1. Enhanced Error Capture
-All jobs now capture detailed error information when failures occur:
+The CI pipeline consists of 7 main jobs that execute based on change detection and dependency relationships:
 
-- **Lint Job**: Captures output from ruff, yamllint, shellcheck, and sqlfluff
-- **Database Validation**: Logs from database setup, DAL smoke tests, and pytest
-- **UI/Logic Validation**: Detailed test failure logs
-- **Build Job**: PyInstaller and DMG creation diagnostics
+1. **detect** - Change detection and file filtering
+2. **lint** - Code quality validation across multiple languages
+3. **plantuml** - UML diagram rendering and commit
+4. **db-validate** - Database schema and DAL testing
+5. **ui-logic-validate** - UI and business logic testing
+6. **build-macos** - macOS application build and packaging
+7. **pipeline-summary** - Overall pipeline status aggregation
 
-### 2. Comprehensive Job Summaries
-Each job provides detailed status information:
+## Pipeline Triggers
 
-```markdown
-## Lint Results: **failed**
+The pipeline activates on:
+- **Push events** to the `main` branch
+- **Pull request events** targeting the `main` branch  
+- **Manual dispatch** with configurable parameters:
+  - `run_all`: Force execution of all jobs regardless of changes
+  - `full_lint`: Force full repository linting scope
+  - `enforce_sqlfluff`: Treat SQLFluff violations as failures
 
-### 🐍 Python (Ruff)
-**Status:** ❌ Failed
+## Concurrency Control
 
-<details><summary>Ruff violations</summary>
+Uses `pipeline-${{ github.ref }}` concurrency group with `cancel-in-progress: true` to prevent multiple pipeline runs on the same branch.
 
-```json
-[{"type": "error", "code": "F401", "message": "unused import"}]
+## Job Specifications
+
+### 1. Change Detection (`detect`)
+
+**Purpose**: Analyzes changed files to determine which downstream jobs should execute.
+
+**Technology**: Uses `dorny/paths-filter@v3` with JSON file listing.
+
+**File Categories Tracked**:
+- **Python** (`py`): `app/**/*.py`, `scripts/**/*.py`, `tests/**/*.py`
+- **Database** (`db`): `db/**`, `scripts/**`, `app/dal/**`, `app/config/env.py`, `requirements.txt`
+- **UML** (`uml`): `docs/diagrams/**/*.puml`
+- **UI/Logic** (`ui`): `app/ui_adapters/**/*.py`, `app/**/*.ui`, `app/**/*.qml`, `app/**/*.py` (excluding DAL/config)
+- **YAML** (`yaml`): `**/*.y?(a)ml`
+- **Shell** (`sh`): `**/*.sh`
+- **SQL** (`sql`): `db/**/*.sql`, `scripts/**/*.sql`
+
+**Outputs**: Boolean flags and file lists for each category, consumed by downstream jobs.
+
+**Summary Generation**: Creates expandable sections showing detected changes per file type.
+
+### 2. Code Quality Validation (`lint`)
+
+**Purpose**: Validates code quality across Python, YAML, Shell, and SQL files.
+
+**Dependencies**: Requires `detect` job completion.
+
+**Execution Strategy**: 
+- **First run** (no cache) or manual force: Full repository scan
+- **Subsequent runs**: Changed files only (based on detect outputs)
+
+**Tools and Configuration**:
+
+#### Python (Ruff)
+- **Version**: `ruff==0.6.*`
+- **Output**: JSON format for structured error reporting
+- **Scope**: Full repo or changed Python files only
+
+#### YAML (yamllint)
+- **Tool**: System yamllint package
+- **Output**: Text format with file:line:column details
+- **Scope**: Full repo or changed YAML files only
+
+#### Shell (ShellCheck)
+- **Tool**: System shellcheck package
+- **Pattern**: Discovers `**/*.sh` files using bash globbing
+- **Output**: Text format with detailed violation descriptions
+
+#### SQL (SQLFluff)
+- **Version**: `sqlfluff==3.*`
+- **Dialect**: MySQL (configured via `.sqlfluff` file)
+- **Output**: JSON format with violation details
+- **Behavior**: Violations logged but don't fail job unless `enforce_sqlfluff=1`
+- **Scope**: `db` and `scripts` directories
+
+**Caching**: Uses `lint-baseline-v1` cache key to track first-run status.
+
+**Error Handling**: Each tool captures output to dedicated files, environment variables track failure states.
+
+**Summary Generation**: Provides detailed breakdown per tool with expandable error sections and actionable guidance.
+
+**Artifact Collection**: On failure, uploads `lint-failure-logs` containing all tool outputs.
+
+### 3. UML Diagram Rendering (`plantuml`)
+
+**Purpose**: Renders PlantUML diagrams to SVG format and commits results.
+
+**Dependencies**: Requires `lint` job success.
+
+**Trigger Condition**: Executes when UML files change or manual `run_all=true`.
+
+**Technology Stack**:
+- **Java**: Temurin JDK 17
+- **PlantUML**: Latest release JAR
+- **Graphviz**: System package for diagram rendering
+
+**Process**:
+1. Downloads latest PlantUML JAR
+2. Discovers `docs/diagrams/**/*.puml` files
+3. Renders each to SVG format
+4. Auto-commits results with message "chore(diagrams): render PlantUML"
+
+**Permissions**: Requires `contents: write` for committing rendered diagrams.
+
+### 4. Database Validation (`db-validate`)
+
+**Purpose**: Validates database schema, DAL functionality, and data model integrity.
+
+**Dependencies**: Requires `lint` job success.
+
+**Trigger Condition**: Executes when database-related files change or manual `run_all=true`.
+
+**Infrastructure**:
+- **MySQL Service**: Version 9.0 container
+- **Database**: `the_studentr` with root password from secrets
+- **Health Checks**: 30 retries with 5-second intervals
+- **Network**: Exposed on port 3306
+
+**Environment Configuration**:
+```
+SA_DB_HOST=127.0.0.1
+SA_DB_PORT=3306  
+SA_DB_USER=root
+SA_DB_PASS=${{ secrets.CI_DB_ROOT_PASS }}
+SA_DB_NAME=the_studentr
 ```
 
-</details>
+**Validation Steps**:
 
-### 📄 YAML (yamllint)
-**Status:** ✅ Passed
+#### Database Setup
+- **Script**: `python -m scripts.setup_db`
+- **Purpose**: Initialize schema and base data
+- **Output**: `db-setup.log`
 
-### Next steps:
-1. Review the specific violations in each section
-2. Fix the issues locally
-3. Re-run the linters locally
-4. Commit and push your fixes
-```
+#### DAL Smoke Tests
+- **Script**: `python -m scripts.dal_smoke`
+- **Purpose**: Validate Data Access Layer connectivity and basic operations
+- **Output**: `dal-smoke.log`
 
-### 3. Failure Artifacts
-When jobs fail, relevant logs are automatically uploaded as artifacts:
+#### CI Smoke Tests  
+- **Script**: `python -m scripts.ci_smoke`
+- **Purpose**: CI-specific validation routines
+- **Output**: `ci-smoke.log`
 
-- `lint-failure-logs`: All linting tool outputs
-- `db-validation-failure-logs`: Database and test logs  
-- `ui-validation-failure-logs`: UI test outputs
-- `macOS-build-failure-logs`: Build error logs
+#### Unit Tests
+- **Framework**: pytest with quiet mode and short traceback
+- **Output**: `pytest-output.log` and `pytest-results.xml`
+- **Scope**: All database and DAL tests
 
-### 4. Pipeline Summary
-A new `pipeline-summary` job provides an overall status table:
+**Error Handling**: Each step captures detailed logs and tracks failure states in environment variables.
 
-| Job | Status | Notes |
-|-----|--------|-------|
-| 🔍 Change Detection | ✅ Success | Changes detected and analyzed |
-| 🧹 Lint | ❌ Failed | Code quality issues found |
-| 🗄️ Database Validation | ✅ Success | All DB tests passed |
-| 🖥️ UI/Logic Validation | ⏭️ Skipped | No UI changes |
-| 🍎 macOS Build | ✅ Success | Application built successfully |
+**Summary Generation**: Provides status breakdown per validation step with expandable error logs.
 
-## Benefits for Developers
+**Artifact Collection**: On failure, uploads `db-validation-failure-logs` with all validation outputs.
 
-### Before
-- Basic "job failed" message
-- No error context
-- Manual investigation required
-- Time-consuming debugging
+### 5. UI and Logic Validation (`ui-logic-validate`)
 
-### After  
-- Detailed error breakdown by tool
-- Specific file and line information
-- Actionable next steps
-- Downloadable logs for offline analysis
-- Clear guidance on local testing commands
+**Purpose**: Validates user interface components and business logic without database dependencies.
 
-## Usage
+**Dependencies**: Requires both `lint` and `db-validate` job success.
 
-The enhanced pipeline automatically provides detailed summaries for all runs. No additional configuration is required.
+**Trigger Condition**: Executes when UI/logic files change, with conditional logic:
+- Runs if UI changes detected AND either no DB changes OR DB validation succeeded
+- Manual `run_all=true` overrides change detection
 
-### For Failed Jobs:
-1. Check the job summary for detailed error breakdown
-2. Download failure artifacts if needed
-3. Follow the "Next steps" guidance
-4. Test fixes locally using provided commands
-5. Re-run pipeline after fixes
+**Technology Stack**:
+- **Python**: 3.11 with pip caching
+- **Testing**: pytest and pytest-qt for PyQt5 UI testing
+- **Scope**: Excludes database and schema tests (`-k "not db and not schema"`)
 
-### Available Local Commands:
+**Process**:
+1. Install dependencies including pytest-qt for UI testing
+2. Configure PYTHONPATH for module resolution
+3. Execute UI/logic test suite with structured output
+
+**Output Formats**:
+- **Log**: `ui-pytest-output.log` with detailed test results
+- **JUnit XML**: `ui-pytest-results.xml` for structured reporting
+
+**Summary Generation**: Provides test status with expandable failure details and local testing guidance.
+
+**Artifact Collection**: On failure, uploads `ui-validation-failure-logs` with test outputs.
+
+### 6. macOS Application Build (`build-macos`)
+
+**Purpose**: Builds standalone macOS application bundle and optional DMG installer.
+
+**Dependencies**: Requires `lint`, `db-validate`, and `ui-logic-validate` job success.
+
+**Trigger Condition**: Executes when UI validation succeeds OR no UI changes detected, with manual override.
+
+**Technology Stack**:
+- **Platform**: macOS-latest runner
+- **Python**: 3.11 with pip caching
+- **Build Tool**: PyInstaller 6.6.*
+- **DMG Creation**: Homebrew create-dmg (optional)
+
+**Build Process**:
+
+#### Application Bundle
+- **Entry Point**: `app/main.py`
+- **Mode**: Windowed (GUI application)
+- **Output**: `dist/the-studentr.app`
+- **Logging**: Detailed build log in `build.log`
+
+#### DMG Installer (Optional)
+- **Tool**: create-dmg from Homebrew
+- **Continue on Error**: DMG creation failure doesn't fail the job
+- **Output**: `dist/the-studentr.dmg`
+- **Logging**: DMG creation log in `dmg-creation.log`
+
+**Error Handling**: 
+- PyInstaller failures halt the job with detailed error logging
+- DMG failures are logged but don't affect job success
+
+**Summary Generation**: Provides build status, file listings, and detailed error information.
+
+**Artifact Collection**: 
+- **Success**: Uploads built .app and .dmg files
+- **Failure**: Uploads `macOS-build-failure-logs` with build and DMG logs
+
+### 7. Pipeline Summary (`pipeline-summary`)
+
+**Purpose**: Aggregates results from all jobs and provides comprehensive pipeline status.
+
+**Dependencies**: Waits for all jobs (always executes regardless of individual job results).
+
+**Technology**: Bash scripting with conditional status evaluation.
+
+**Summary Components**:
+
+#### Job Results Table
+Displays status for each job:
+- 🔍 Change Detection
+- 🧹 Lint  
+- 📊 UML Rendering
+- 🗄️ Database Validation
+- 🖥️ UI/Logic Validation
+- 🍎 macOS Build
+
+**Status Indicators**:
+- ✅ Success: Job completed successfully
+- ❌ Failed: Job encountered errors
+- ⏭️ Skipped: Job didn't execute due to conditions
+
+#### Overall Pipeline Status
+- **Success**: All critical jobs passed
+- **Failure**: One or more critical jobs failed
+
+#### Recommendations
+Provides specific guidance based on pipeline outcome:
+- **Success**: Deployment readiness confirmation
+- **Failure**: Debugging steps and artifact references
+
+#### Artifact Summary
+Lists available artifacts from the pipeline run for investigation and deployment.
+
+## Error Reporting and Debugging
+
+### Error Capture Strategy
+Each job implements comprehensive error capture:
+- **Tool Output**: Structured JSON or text format logs
+- **Environment Variables**: Track failure states across steps
+- **Exit Code Handling**: Proper error propagation while capturing diagnostics
+
+### Summary Generation
+All jobs generate detailed summaries including:
+- **Status Indicators**: Clear visual success/failure indicators
+- **Expandable Sections**: Detailed error logs in collapsible sections
+- **Actionable Guidance**: Specific commands for local reproduction and fixing
+- **Context Information**: Timing, file listings, and diagnostic data
+
+### Artifact Collection
+Failure artifacts are automatically collected for offline analysis:
+- **Naming Convention**: `{job-name}-failure-logs`
+- **Content**: All relevant log files and diagnostic outputs
+- **Availability**: Downloadable from GitHub Actions interface
+
+### Local Testing Commands
+Each job provides specific commands for local validation:
+
 ```bash
 # Linting
 ruff check .
@@ -92,24 +296,102 @@ yamllint .
 shellcheck **/*.sh
 sqlfluff lint db scripts
 
-# Database tests
+# Database validation
 python -m scripts.setup_db && pytest
 
-# UI tests  
+# UI testing
 pip install pytest pytest-qt && pytest tests -k "not db"
 
-# Build test
+# Build testing
 pip install pyinstaller && pyinstaller --windowed app/main.py
 ```
 
-## Error Examples
+## Pipeline Configuration
 
-The pipeline now provides specific guidance for common issues:
+### Environment Variables
+Jobs utilize environment variables for configuration:
+- **Database**: `SA_DB_*` variables for MySQL connection
+- **Build**: `APP_ENTRY`, `APP_NAME` for build configuration
+- **Tool Settings**: Version constraints and execution parameters
 
-- **Import errors**: Shows exact unused imports with file locations
-- **YAML formatting**: Highlights specific line and column issues
-- **Database connectivity**: Provides MySQL connection diagnostics
-- **Build failures**: Shows missing dependencies and module issues
-- **Test failures**: Displays full test output with stack traces
+### Secrets Management
+Secure information stored in GitHub repository secrets:
+- `CI_DB_ROOT_PASS`: MySQL root password for test database
 
-This makes the CI pipeline significantly more helpful for development and debugging.
+### Caching Strategy
+Strategic caching improves pipeline performance:
+- **Python Dependencies**: pip cache based on `requirements.txt`
+- **Lint Baseline**: Tracks first-run vs. incremental linting
+
+## Performance Optimization
+
+### Change Detection
+Smart execution based on file changes reduces unnecessary work:
+- Only relevant jobs execute based on changed file types
+- Incremental linting for faster feedback on small changes
+- Conditional job dependencies prevent cascading failures
+
+### Parallel Execution
+Jobs execute in parallel where dependencies allow:
+- Lint, PlantUML, and Database validation can run concurrently after change detection
+- UI validation waits for both lint and database validation
+- Build waits for all validation jobs
+
+### Resource Management
+Efficient resource utilization:
+- Cancels in-progress runs when new commits pushed
+- Uses appropriate runner types (Ubuntu for testing, macOS for builds)
+- Strategic caching reduces setup time
+
+## Maintenance and Extensions
+
+### Adding New Jobs
+To add new validation or build jobs:
+1. Add change detection patterns in `detect` job filters
+2. Create new job with appropriate dependencies
+3. Implement error capture and summary generation
+4. Add job status to `pipeline-summary`
+
+### Tool Updates
+Update tool versions in job installation steps:
+- Pin major versions for stability
+- Update both installation and documentation simultaneously
+- Test updates in feature branches before merging
+
+### Error Handling Improvements
+When enhancing error reporting:
+- Follow established patterns for output capture
+- Add structured logging to summary generation
+- Include actionable guidance for common issues
+- Maintain artifact collection for debugging
+
+---
+
+## Changelog
+
+### 2025-09-12 - Enhanced Error Reporting and Job Summaries
+
+**Added:**
+- Comprehensive error capture for all linting tools (ruff, yamllint, shellcheck, sqlfluff)
+- Detailed job summaries with expandable error sections
+- Automatic artifact collection for failed jobs
+- Pipeline summary job with overall status table
+- Actionable guidance and local testing commands
+- Structured output formats (JSON for ruff/sqlfluff, text for others)
+
+**Fixed:**
+- Typo: `ppython` → `python` in SQLFluff changed files step
+- Broken jq string formatting in SQLFluff summary causing syntax errors
+- YAML indentation issues in Python heredoc blocks
+
+**Enhanced:**
+- All jobs now provide detailed status breakdowns by component
+- Clear success/failure indicators with specific error information
+- Downloadable logs for offline debugging and analysis
+- Timing information and build artifact listings
+
+**Technical Improvements:**
+- Better error propagation while maintaining diagnostic capture
+- Environment variable tracking for failure states across job steps
+- Conditional execution logic improved for performance
+- Standardized summary generation patterns across all jobs
