@@ -5,7 +5,6 @@ name: Pipeline
   push:
     branches: [main]
   pull_request:
-    branches: [main]
   workflow_dispatch:
     inputs:
       run_all:
