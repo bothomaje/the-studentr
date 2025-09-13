@@ -10,20 +10,26 @@ def pytest_configure(config):
 
 @pytest.fixture(scope="function")
 def db_conn():
-    conn = connect()
+    db = connect()
     try:
-        yield conn
+        yield db
     finally:
-        conn.close()
+        connection_name = db.connectionName()
+        db.close()
+        from PyQt5.QtSql import QSqlDatabase
+        QSqlDatabase.removeDatabase(connection_name)
 
 @pytest.fixture(scope="function")
 def db_tx(db_conn):
-    prev = db_conn.get_autocommit()
-    if prev:
-        db_conn.autocommit(False)
+    # Start a transaction
+    if not db_conn.transaction():
+        raise RuntimeError(f"Failed to start transaction: {db_conn.lastError().text()}")
     try:
         yield db_conn
-        db_conn.rollback()  # ensure clean DB
-    finally:
-        if prev:
-            db_conn.autocommit(True)
+        # Always rollback to ensure clean DB
+        if not db_conn.rollback():
+            print(f"Warning: Failed to rollback transaction: {db_conn.lastError().text()}")
+    except Exception:
+        if not db_conn.rollback():
+            print(f"Warning: Failed to rollback transaction: {db_conn.lastError().text()}")
+        raise

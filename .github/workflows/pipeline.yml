@@ -563,13 +563,14 @@ jobs:
           cache: 'pip'
           cache-dependency-path: 'requirements.txt'
 
-      - name: Build deps for mysqlclient
+      - name: Install MySQL and Qt5 dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libmysqlclient-dev
+          sudo apt-get install -y libqt5sql5-mysql python3-pyqt5 python3-pyqt5.qtsql
 
       - name: Install python deps
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
 
       - name: Setup DB
         run: |

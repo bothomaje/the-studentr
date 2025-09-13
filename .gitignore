@@ -13,3 +13,15 @@ __pycache__/
 
 # Local-only
 db/local_*.sql
+
+# Database files (SQLite testing)
+*.db
+*.sqlite
+*.sqlite3
+test_studentr.db
+
+# Temporary CI files
+requirements_no_pyqt.txt
+
+# Migration test script (temporary)
+test_qsql_migration.py
