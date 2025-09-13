@@ -80,12 +80,12 @@ def connect(autocommit: bool = True) -> QSqlDatabase:
         # Provide helpful error messages for common issues
         if "Can't open lib" in error.text() and "MySQL ODBC" in error.text():
             error_msg += (
-                "\n\nThis error indicates that the MySQL ODBC driver is not installed.\n"
+                "\n\nThis error indicates that the native MySQL Qt driver is not installed.\n"
                 "Please install it using:\n"
-                "Ubuntu/Debian: sudo apt-get install libmyodbc\n"
-                "CentOS/RHEL: sudo yum install mysql-connector-odbc\n"
-                "Or install the native MySQL driver:\n"
-                "Ubuntu/Debian: sudo apt-get install libqt5sql5-mysql"
+                "Ubuntu/Debian: sudo apt-get install libqt5sql5-mysql\n"
+                "CentOS/RHEL: sudo yum install qt5-qtbase-mysql\n"
+                "macOS: brew install qt@5\n"
+                "Windows: Install Qt5 with MySQL support"
             )
         elif "Access denied" in error.text():
             error_msg += (
