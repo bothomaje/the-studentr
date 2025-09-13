@@ -578,7 +578,7 @@ jobs:
         run: |
           # Add system packages to Python path
           echo "PYTHONPATH=/usr/lib/python3/dist-packages:$PYTHONPATH" >> $GITHUB_ENV
-          
+
           # Verify MySQL drivers are available
           python3 -c "
           import sys
