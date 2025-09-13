@@ -103,11 +103,9 @@ def connect(autocommit: bool = True) -> QSqlDatabase:
     query = QSqlQuery(db)
     if autocommit:
         if not query.exec_("SET autocommit = 1"):
-            # This might fail for SQLite, which doesn't support SET autocommit
             pass
     else:
         if not query.exec_("SET autocommit = 0"):
-            # This might fail for SQLite, which doesn't support SET autocommit
             pass
     
     return db
