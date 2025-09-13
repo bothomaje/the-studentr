@@ -554,7 +554,6 @@ jobs:
       SA_DB_USER: root
       SA_DB_PASS: ${{ secrets.CI_DB_ROOT_PASS }}
       SA_DB_NAME: the_studentr
-      PYTHONPATH: /usr/lib/python3/dist-packages
     steps:
       - uses: actions/checkout@v4
 
@@ -564,47 +563,28 @@ jobs:
           cache: 'pip'
           cache-dependency-path: 'requirements.txt'
 
-      - name: Install MySQL and Qt5 dependencies
+      - name: Install system deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y libqt5sql5-mysql python3-pyqt5 python3-pyqt5.qtsql
+          sudo apt-get install -y libqt5sql5-mysql libmysqlclient-dev
 
       - name: Install python deps
         run: |
-          # Install dependencies except PyQt5 (use system version)
-          pip install --user bcrypt~=4.1 pytest~=7.4.4
+          # Install all dependencies including PyQt5
+          pip install -r requirements.txt
 
-      - name: Ensure system PyQt5 is used
+      - name: Verify PyQt5 MySQL drivers
         run: |
-          # Add system packages to Python path
-          echo "PYTHONPATH=/usr/lib/python3/dist-packages:$PYTHONPATH" >> $GITHUB_ENV
-
-          # Verify PyQt5 is available from system packages
           python3 -c "
-          import sys
-          sys.path.insert(0, '/usr/lib/python3/dist-packages')
-
-          # Check PyQt5 core functionality
-          try:
-              from PyQt5 import QtCore
-              print('✓ PyQt5 QtCore found')
-          except ImportError as e:
-              print(f'✗ PyQt5 QtCore import failed: {e}')
-              exit(1)
-
-          # Check PyQt5 SQL functionality and MySQL drivers
-          try:
-              from PyQt5.QtSql import QSqlDatabase
-              drivers = QSqlDatabase.drivers()
-              print('Available SQL drivers:', drivers)
-              mysql_drivers = [d for d in drivers if 'MYSQL' in d.upper()]
-              if mysql_drivers:
-                  print('✓ MySQL drivers found:', mysql_drivers)
-              else:
-                  print('✗ No MySQL drivers found')
-                  exit(1)
-          except ImportError as e:
-              print(f'✗ PyQt5.QtSql import failed: {e}')
+          from PyQt5.QtSql import QSqlDatabase
+          drivers = QSqlDatabase.drivers()
+          print('Available SQL drivers:', drivers)
+          mysql_drivers = [d for d in drivers if 'MYSQL' in d.upper()]
+          if mysql_drivers:
+              print('✓ MySQL drivers found:', mysql_drivers)
+          else:
+              print('✗ No MySQL drivers found')
+              print('Available drivers:', drivers)
               exit(1)
           "
 
