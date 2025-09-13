@@ -568,11 +568,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libqt5sql5-mysql python3-pyqt5 python3-pyqt5.qtsql
 
-      - name: Install python deps (excluding PyQt5 since we use system package)
+      - name: Install python deps
         run: |
-          # Install requirements but skip PyQt5 since we use system package
-          grep -v "PyQt5" requirements.txt > requirements_no_pyqt.txt
-          pip install -r requirements_no_pyqt.txt
+          pip install -r requirements.txt
 
       - name: Setup DB
         run: |
