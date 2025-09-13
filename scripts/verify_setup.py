@@ -130,8 +130,8 @@ def test_tables():
         with db_conn() as db:
             query = QSqlQuery(db)
             
-            # Check for tables (works with both MySQL and SQLite)
-            if query.exec_("SELECT name FROM sqlite_master WHERE type='table' UNION ALL SELECT table_name as name FROM information_schema.tables WHERE table_schema = DATABASE()"):
+            # Check for tables (MySQL only)
+            if query.exec_("SELECT table_name as name FROM information_schema.tables WHERE table_schema = DATABASE()"):
                 tables = []
                 while query.next():
                     tables.append(query.value(0))
