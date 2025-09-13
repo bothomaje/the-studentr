@@ -3,31 +3,30 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
-import MySQLdb
-from app.dal.base import db_conn, db_cursor, fetch_all, fetch_one, execute, transaction
+from app.dal.base import db_conn, db_query, fetch_all, fetch_one, execute, transaction, IntegrityError
 
 class ModuleAlreadyExists(Exception):
     pass
 
 def list_modules_for_user(user_id: str) -> list[dict]:
-    with db_conn() as conn:
+    with db_conn() as db:
         return fetch_all(
-            conn,
+            db,
             "SELECT module_id, module_code, module_name, "
             "       year_mark_weight, exam_weight, min_assignments, "
             "       min_year_mark, exam_subminimum, created_at, updated_at "
-            "FROM modules WHERE user_id=%s "
+            "FROM modules WHERE user_id=? "
             "ORDER BY module_code",
             (user_id,),
         )
 
 def get_module_by_id(module_id: str, user_id: str) -> Optional[dict]:
-    with db_conn() as conn:
-        return fetch_one(conn, "SELECT * FROM modules WHERE module_id=%s AND user_id=%s", (module_id, user_id),)
+    with db_conn() as db:
+        return fetch_one(db, "SELECT * FROM modules WHERE module_id=? AND user_id=?", (module_id, user_id),)
 
 def get_module_by_code(user_id: str, module_code: str) -> Optional[dict]:
-    with db_conn() as conn:
-        return fetch_one(conn, "SELECT * FROM modules WHERE user_id=%s AND module_code=%s", (user_id, module_code),)
+    with db_conn() as db:
+        return fetch_one(db, "SELECT * FROM modules WHERE user_id=? AND module_code=?", (user_id, module_code),)
 
 def create_module(
         *,
@@ -47,10 +46,10 @@ def create_module(
     
     module_id = str(uuid.uuid4())
 
-    with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
+    with db_conn(autocommit=False) as db, transaction(db), db_query(db) as query:
         exists = fetch_one(
-            conn,
-            "SELECT module_id FROM modules WHERE user_id=%s AND module_code=%s",
+            db,
+            "SELECT module_id FROM modules WHERE user_id=? AND module_code=?",
             (user_id, module_code),
         )
         if exists:
@@ -58,17 +57,17 @@ def create_module(
         
         try:
             execute(
-                cur,
+                query,
                 "INSERT INTO modules "
                 "(module_id, user_id, module_code, module_name, year_mark_weight, "
                 "exam_weight, min_assignments, min_year_mark, exam_subminimum) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     module_id, user_id, module_code, module_name, year_mark_weight,
                     exam_weight, min_assignments, min_year_mark, exam_subminimum
                 ),
             )
-        except MySQLdb.IntegrityError as e:
+        except IntegrityError as e:
             if getattr(e, "args", None) and e.args[0] == 1062:
                 raise ModuleAlreadyExists(f"Module code '{module_code}' already exists for this user.")
             raise
@@ -98,7 +97,7 @@ def update_module(
 
     sets, params = [], []
     def add(col: str, val):
-        sets.append(f"{col}=%s")
+        sets.append(f"{col}=?")
         params.append(val)
 
     if module_code is not None:
@@ -119,21 +118,21 @@ def update_module(
     if not sets:
         return 0
 
-    sql = "UPDATE modules SET " + ", ".join(sets) + " WHERE module_id=%s AND user_id=%s"
+    sql = "UPDATE modules SET " + ", ".join(sets) + " WHERE module_id=? AND user_id=?"
     params.append(module_id)
     params.append(user_id)
 
-    with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
+    with db_conn(autocommit=False) as db, transaction(db), db_query(db) as query:
         try:
-            return execute(cur, sql, tuple(params))
-        except MySQLdb.IntegrityError as e:
+            return execute(query, sql, tuple(params))
+        except IntegrityError as e:
             if getattr(e, "args", None) and e.args[0] == 1062:
                 raise ModuleAlreadyExists("Module code already exists for this user") from e
             raise
 
 def delete_module(module_id: str) -> int:
-    with db_conn(autocommit=False) as conn, transaction(conn), db_cursor(conn) as cur:
-        return execute(cur, "DELETE FROM modules WHERE module_id=%s", (module_id,))
+    with db_conn(autocommit=False) as db, transaction(db), db_query(db) as query:
+        return execute(query, "DELETE FROM modules WHERE module_id=?", (module_id,))
     
 def list_modules_dashboard(user_id: str) -> list[dict]:
     sql = """
@@ -164,12 +163,12 @@ def list_modules_dashboard(user_id: str) -> list[dict]:
     FROM modules m
     LEFT JOIN assignments a ON a.module_id = m.module_id
     LEFT JOIN marks mk       ON mk.assignment_id = a.assignment_id
-    WHERE m.user_id = %s
+    WHERE m.user_id = ?
     GROUP BY m.module_id
     ORDER BY m.module_code
     """
-    with db_conn() as conn:
-        rows = fetch_all(conn, sql, (user_id,))
+    with db_conn() as db:
+        rows = fetch_all(db, sql, (user_id,))
 
     # compute final + booleans in Python for clarity
     out = []
