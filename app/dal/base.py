@@ -139,38 +139,37 @@ def db_query(db: QSqlDatabase):
 
 @contextmanager
 def transaction(db: QSqlDatabase):
-    # Check if we're already in a transaction
-    was_autocommit = True
-    query = QSqlQuery(db)
-    query.exec_("SELECT @@autocommit")
-    if query.next():
-        was_autocommit = query.value(0) == 1
-    
-    if was_autocommit:
-        if not db.transaction():
-            raise RuntimeError(f"Failed to start transaction: {db.lastError().text()}")
+    # Always start a new transaction when using this context manager
+    if not db.transaction():
+        raise RuntimeError(f"Failed to start transaction: {db.lastError().text()}")
     
     try:
         yield
-        if was_autocommit:
-            if not db.commit():
-                raise RuntimeError(f"Failed to commit transaction: {db.lastError().text()}")
+        if not db.commit():
+            raise RuntimeError(f"Failed to commit transaction: {db.lastError().text()}")
     except Exception:
-        if was_autocommit:
-            if not db.rollback():
-                print(f"Warning: Failed to rollback transaction: {db.lastError().text()}")
+        if not db.rollback():
+            print(f"Warning: Failed to rollback transaction: {db.lastError().text()}")
         raise
 
 def execute(query: QSqlQuery, sql: str, params: Optional[Sequence[Any]] = None) -> int:
     """Execute a SQL query and return the number of affected rows."""
     if params:
+        # Convert date/time objects to strings for system Qt compatibility
+        converted_params = []
+        for param in params:
+            if hasattr(param, 'isoformat'):  # date, datetime, time objects
+                converted_params.append(param.isoformat())
+            else:
+                converted_params.append(param)
+        
         # Prepare the query with placeholders
         if not query.prepare(sql):
             _check_sql_error(query)
             raise RuntimeError(f"Failed to prepare query: {query.lastError().text()}")
         
         # Bind parameters
-        for param in params:
+        for param in converted_params:
             query.addBindValue(param)
         
         # Execute the prepared query
@@ -191,8 +190,14 @@ def _query_to_dict(query: QSqlQuery) -> dict:
     result = {}
     for i in range(record.count()):
         field_name = record.fieldName(i)
+        # Convert QByteArray field names to string if necessary (for system Qt compatibility)
+        if hasattr(field_name, 'data'):
+            field_name = field_name.data().decode('utf-8')
         value = query.value(i)
-        result[field_name] = value
+        # Convert QByteArray values to string if necessary (for system Qt compatibility)
+        if hasattr(value, 'data'):
+            value = value.data().decode('utf-8')
+        result[str(field_name)] = value
     return result
 
 def fetch_one(db: QSqlDatabase, sql: str, params: Optional[Sequence[Any]] = None) -> Optional[dict]:

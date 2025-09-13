@@ -554,6 +554,7 @@ jobs:
       SA_DB_USER: root
       SA_DB_PASS: ${{ secrets.CI_DB_ROOT_PASS }}
       SA_DB_NAME: the_studentr
+      PYTHONPATH: /usr/lib/python3/dist-packages
     steps:
       - uses: actions/checkout@v4
 
@@ -570,7 +571,28 @@ jobs:
 
       - name: Install python deps
         run: |
-          pip install -r requirements.txt
+          # Install dependencies except PyQt5 (use system version)
+          pip install bcrypt~=4.1 pytest~=7.4.4
+
+      - name: Ensure system PyQt5 is used
+        run: |
+          # Add system packages to Python path
+          echo "PYTHONPATH=/usr/lib/python3/dist-packages:$PYTHONPATH" >> $GITHUB_ENV
+          
+          # Verify MySQL drivers are available
+          python3 -c "
+          import sys
+          sys.path.insert(0, '/usr/lib/python3/dist-packages')
+          from PyQt5.QtSql import QSqlDatabase
+          drivers = QSqlDatabase.drivers()
+          print('Available drivers:', drivers)
+          mysql_drivers = [d for d in drivers if 'MYSQL' in d.upper()]
+          if mysql_drivers:
+              print('✓ MySQL drivers found:', mysql_drivers)
+          else:
+              print('✗ No MySQL drivers found')
+              exit(1)
+          "
 
       - name: Setup DB
         run: |

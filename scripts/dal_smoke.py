@@ -18,7 +18,7 @@ def main():
 
         rows = fetch_all(conn,
             "SELECT TABLE_NAME AS table_name FROM information_schema.tables "
-            "WHERE table_schema=%s ORDER BY TABLE_NAME",
+            "WHERE table_schema=? ORDER BY TABLE_NAME",
             (db_name,))
         tables = [r["table_name"] for r in rows]
         print("Tables:", ", ".join(tables) if tables else "(none)")
