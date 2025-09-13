@@ -572,7 +572,7 @@ jobs:
       - name: Install python deps
         run: |
           # Install dependencies except PyQt5 (use system version)
-          pip install --user bcrypt~=4.1 pytest~=7.4.4
+          pip install --user bcrypt~=4.1 pytest~=7.4.4 PyQt5-sip~=12.13.0
 
       - name: Ensure system PyQt5 is used
         run: |
