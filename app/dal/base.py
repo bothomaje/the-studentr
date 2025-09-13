@@ -50,11 +50,11 @@ def connect(autocommit: bool = True) -> QSqlDatabase:
     if QSqlDatabase.contains(connection_name):
         QSqlDatabase.removeDatabase(connection_name)
     
-    # Try QMYSQL driver first, fall back to QODBC
+    # Use MySQL driver (simplified for MySQL-only deployment)
     available_drivers = QSqlDatabase.drivers()
     
     if "QMYSQL" in available_drivers or "QMYSQL3" in available_drivers:
-        # Use native MySQL driver if available
+        # Use native MySQL driver
         driver_name = "QMYSQL" if "QMYSQL" in available_drivers else "QMYSQL3"
         db = QSqlDatabase.addDatabase(driver_name, connection_name)
         db.setHostName(cfg.host)
@@ -62,35 +62,15 @@ def connect(autocommit: bool = True) -> QSqlDatabase:
         db.setUserName(cfg.user)
         db.setPassword(cfg.passwd)
         db.setDatabaseName(cfg.db)
-        # Set options for charset and unicode
-        db.setConnectOptions("MYSQL_OPT_CHARSET=utf8mb4")
-    elif "QODBC" in available_drivers or "QODBC3" in available_drivers:
-        # Use ODBC driver as fallback
-        driver_name = "QODBC" if "QODBC" in available_drivers else "QODBC3"
-        db = QSqlDatabase.addDatabase(driver_name, connection_name)
-        # Build ODBC connection string for MySQL
-        # Note: This requires MySQL ODBC driver to be installed on the system
-        odbc_string = (f"DRIVER={{MySQL ODBC 8.0 Unicode Driver}};"
-                      f"SERVER={cfg.host};"
-                      f"PORT={cfg.port};"
-                      f"DATABASE={cfg.db};"
-                      f"UID={cfg.user};"
-                      f"PWD={cfg.passwd};"
-                      f"CHARSET=utf8mb4;")
-        db.setDatabaseName(odbc_string)
-    elif "QSQLITE" in available_drivers:
-        # Emergency fallback to SQLite for testing/demo purposes
-        # This won't work with the actual MySQL schema, but demonstrates the pattern
-        print("Warning: No MySQL drivers available, falling back to SQLite for demo")
-        db = QSqlDatabase.addDatabase("QSQLITE", connection_name)
-        db.setDatabaseName(":memory:")  # In-memory SQLite database
+        # Connection configured (charset defaults to UTF-8 in modern MySQL)
     else:
         raise RuntimeError(
-            "No suitable SQL drivers available. Please install MySQL drivers.\n"
-            "Ubuntu/Debian: sudo apt-get install libqt5sql5-mysql\n"
+            "MySQL driver not available. Please install the Qt5 MySQL driver.\n"
+            "Ubuntu/Debian: sudo apt-get install libqt5sql5-mysql python3-pyqt5\n"
             "CentOS/RHEL: sudo yum install qt5-qtbase-mysql\n"
-            "Or install MySQL ODBC driver:\n"
-            "Ubuntu/Debian: sudo apt-get install libmyodbc"
+            "macOS: brew install qt@5\n"
+            "Windows: Install Qt5 with MySQL support\n"
+            f"Available drivers: {available_drivers}"
         )
     
     if not db.open():

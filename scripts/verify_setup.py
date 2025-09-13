@@ -30,23 +30,15 @@ def check_drivers():
     
     # Check for MySQL support
     mysql_drivers = [d for d in available_drivers if 'MYSQL' in d.upper()]
-    odbc_drivers = [d for d in available_drivers if 'ODBC' in d.upper()]
-    sqlite_drivers = [d for d in available_drivers if 'SQLITE' in d.upper()]
     
     if mysql_drivers:
         print(f"✅ MySQL drivers: {mysql_drivers}")
-        return "mysql"
-    elif odbc_drivers:
-        print(f"⚠️  ODBC drivers: {odbc_drivers}")
-        print("   Note: MySQL ODBC driver must be installed separately")
-        return "odbc"
-    elif sqlite_drivers:
-        print(f"⚠️  SQLite drivers: {sqlite_drivers}")
-        print("   Note: Only suitable for testing, not production")
-        return "sqlite"
+        return True
     else:
-        print("❌ No suitable drivers found")
-        return "none"
+        print("❌ No MySQL drivers found")
+        print("   Please install Qt5 MySQL driver:")
+        print("   Ubuntu/Debian: sudo apt-get install libqt5sql5-mysql python3-pyqt5")
+        return False
 
 def check_environment():
     """Check environment configuration."""
@@ -183,8 +175,7 @@ def main():
     all_checks_passed = True
     
     # Run checks
-    driver_type = check_drivers()
-    if driver_type == "none":
+    if not check_drivers():
         all_checks_passed = False
     
     if not check_environment():
@@ -194,15 +185,9 @@ def main():
         all_checks_passed = False
         # If connection fails, skip other tests
         print("\n" + "=" * 40)
-        if driver_type == "odbc":
-            print("💡 Suggestion: Install MySQL ODBC driver")
-            print("   Ubuntu/Debian: sudo apt-get install libmyodbc")
-        elif driver_type == "sqlite":
-            print("💡 Suggestion: Install MySQL drivers or use SQLite mode")
-            print("   Ubuntu/Debian: sudo apt-get install libqt5sql5-mysql")
-        else:
-            print("💡 Suggestion: Install MySQL drivers")
-            print("   See DRIVER_SETUP.md for detailed instructions")
+        print("💡 Suggestion: Install Qt5 MySQL drivers")
+        print("   Ubuntu/Debian: sudo apt-get install libqt5sql5-mysql python3-pyqt5")
+        print("   See DRIVER_SETUP.md for detailed instructions")
         return
     
     if not test_basic_query():

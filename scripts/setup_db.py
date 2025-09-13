@@ -33,109 +33,24 @@ def print_driver_diagnostics():
     else:
         print("✗ No MySQL drivers found")
         
-    # Check for ODBC drivers
-    odbc_drivers = [d for d in available_drivers if 'ODBC' in d.upper()]
-    if odbc_drivers:
-        print(f"✓ ODBC drivers found: {odbc_drivers}")
-        print("  However, MySQL ODBC driver may not be installed on the system.")
-        
     print("\n=== Installation Instructions ===")
-    print("To use MySQL with this application, you need one of the following:")
-    print("\n1. Native MySQL driver (recommended):")
-    print("   Ubuntu/Debian: sudo apt-get install libqt5sql5-mysql")
+    print("To use MySQL with this application, install the Qt5 MySQL driver:")
+    print("   Ubuntu/Debian: sudo apt-get install libqt5sql5-mysql python3-pyqt5")
     print("   CentOS/RHEL:   sudo yum install qt5-qtbase-mysql")
-    print("   macOS:         brew install qt@5 --with-mysql")
+    print("   macOS:         brew install qt@5")
     print("   Windows:       Install Qt5 with MySQL support")
-    
-    print("\n2. MySQL ODBC driver (alternative):")
-    print("   Ubuntu/Debian: sudo apt-get install libmyodbc")
-    print("   CentOS/RHEL:   sudo yum install mysql-connector-odbc")
-    print("   macOS:         brew install mysql-connector-odbc")
-    print("   Windows:       Download from MySQL website")
-    
-    print("\n3. Development/Testing mode:")
-    print("   Run with --sqlite flag to use SQLite for testing")
-    print("   Note: This won't work with the full schema but allows basic testing")
     
     return False
 
-def setup_sqlite_for_testing():
-    """Set up a basic SQLite database for testing purposes."""
-    print("\n=== Setting up SQLite for testing ===")
-    print("Warning: This is a simplified setup for testing only.")
-    print("Some features may not work as expected with SQLite.")
-    
-    # Create a simple SQLite connection
-    db = QSqlDatabase.addDatabase("QSQLITE", "sqlite_setup")
-    db.setDatabaseName("test_studentr.db")
-    
-    if not db.open():
-        error = db.lastError()
-        raise RuntimeError(f"Failed to connect to SQLite database: {error.text()}")
-    
-    query = QSqlQuery(db)
-    
-    # Create basic tables for testing (simplified schema)
-    test_schema = """
-    CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        username TEXT UNIQUE NOT NULL,
-        email TEXT,
-        first_name TEXT,
-        surname TEXT,
-        password_hash TEXT
-    );
-    
-    CREATE TABLE IF NOT EXISTS modules (
-        id TEXT PRIMARY KEY,
-        user_id TEXT,
-        module_code TEXT,
-        module_name TEXT,
-        year_mark_weight REAL,
-        exam_weight REAL,
-        min_assignments INTEGER,
-        FOREIGN KEY(user_id) REFERENCES users(id)
-    );
-    """
-    
-    for statement in (s.strip() for s in test_schema.split(";")):
-        if statement:
-            if not query.exec_(statement):
-                error = query.lastError()
-                print(f"SQLite setup warning: {error.text()}")
-    
-    # Test the setup
-    if not query.exec_("SELECT name FROM sqlite_master WHERE type='table'"):
-        raise RuntimeError(f"Failed to query SQLite tables: {query.lastError().text()}")
-    
-    tables = []
-    while query.next():
-        tables.append(query.value(0))
-    
-    print(f"SQLite tables created: {tables}")
-    
-    connection_name = db.connectionName()
-    db.close()
-    QSqlDatabase.removeDatabase(connection_name)
-    
-    print("SQLite setup completed successfully.")
-    print(f"Database file: {os.path.abspath('test_studentr.db')}")
-    return True
 
 # setup db main function
 def main():
     # Check for command line arguments
-    use_sqlite = "--sqlite" in sys.argv
     show_help = "--help" in sys.argv or "-h" in sys.argv
     
     if show_help:
-        print("Usage: python setup_db.py [--sqlite] [--help]")
-        print("  --sqlite    Use SQLite for testing instead of MySQL")
+        print("Usage: python setup_db.py [--help]")
         print("  --help      Show this help message")
-        return
-    
-    if use_sqlite:
-        setup_sqlite_for_testing()
         return
         
     # load variables and pull connection info
@@ -154,7 +69,7 @@ def main():
     connection_successful = False
     
     if "QMYSQL" in available_drivers or "QMYSQL3" in available_drivers:
-        # Use native MySQL driver if available
+        # Use native MySQL driver
         driver_name = "QMYSQL" if "QMYSQL" in available_drivers else "QMYSQL3"
         print(f"Attempting connection with {driver_name} driver...")
         
@@ -164,30 +79,7 @@ def main():
         db.setUserName(user)
         db.setPassword(passwd)
         db.setDatabaseName(dbname)
-        db.setConnectOptions("MYSQL_OPT_CHARSET=utf8mb4")
-        
-        if db.open():
-            connection_successful = True
-            print(f"✓ Connected successfully using {driver_name}")
-        else:
-            error = db.lastError()
-            print(f"✗ Failed to connect with {driver_name}: {error.text()}")
-            
-    elif "QODBC" in available_drivers or "QODBC3" in available_drivers:
-        # Use ODBC driver as fallback
-        driver_name = "QODBC" if "QODBC" in available_drivers else "QODBC3"
-        print(f"Attempting connection with {driver_name} driver...")
-        
-        db = QSqlDatabase.addDatabase(driver_name, "setup_connection")
-        # Build ODBC connection string for MySQL
-        odbc_string = (f"DRIVER={{MySQL ODBC 8.0 Unicode Driver}};"
-                      f"SERVER={host};"
-                      f"PORT={port};"
-                      f"DATABASE={dbname};"
-                      f"UID={user};"
-                      f"PWD={passwd};"
-                      f"CHARSET=utf8mb4;")
-        db.setDatabaseName(odbc_string)
+        # Connection configured (charset defaults to UTF-8 in modern MySQL)
         
         if db.open():
             connection_successful = True
@@ -201,7 +93,7 @@ def main():
         print("DATABASE CONNECTION FAILED")
         print("="*50)
         print_driver_diagnostics()
-        print("\nPlease install the required MySQL drivers or use --sqlite for testing.")
+        print("\nPlease install the required MySQL drivers.")
         sys.exit(1)
     
     # Continue with setup if connection was successful
