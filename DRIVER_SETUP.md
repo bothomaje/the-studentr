@@ -4,18 +4,18 @@ This document provides instructions for setting up MySQL database drivers for th
 
 ## Overview
 
-The application now uses PyQt's QSql module instead of MySQLdb. This requires MySQL database drivers to be available to PyQt. The application will automatically detect and use the best available driver.
+The application now uses PyQt's QSql module with a **MySQL-only** approach for simplicity and reliability. This requires MySQL database drivers to be available to PyQt.
 
-## Driver Options (in order of preference)
+## Required Setup
 
-### 1. Native MySQL Driver (QMYSQL) - **Recommended**
+### Native MySQL Driver (QMYSQL) - **Required**
 
-This is the preferred option as it provides the best performance and compatibility.
+The application requires the Qt5 MySQL driver to be installed on your system.
 
 **Ubuntu/Debian:**
 ```bash
 sudo apt-get update
-sudo apt-get install libqt5sql5-mysql
+sudo apt-get install libqt5sql5-mysql python3-pyqt5 python3-pyqt5.qtsql
 ```
 
 **CentOS/RHEL:**
@@ -35,41 +35,20 @@ brew install qt@5
 - Install Qt5 with MySQL support through the Qt installer
 - Or use pre-compiled binaries that include MySQL support
 
-### 2. MySQL ODBC Driver (QODBC) - **Alternative**
+## Python Dependencies
 
-If the native driver is not available, the application can use ODBC as a fallback.
-
-**Ubuntu/Debian:**
-```bash
-sudo apt-get update
-sudo apt-get install libmyodbc
-```
-
-**CentOS/RHEL:**
-```bash
-sudo yum install mysql-connector-odbc
-# or for newer versions:
-sudo dnf install mysql-connector-odbc
-```
-
-**macOS:**
-```bash
-brew install mysql-connector-odbc
-```
-
-**Windows:**
-- Download MySQL Connector/ODBC from the MySQL website
-- Install the appropriate version (8.0 recommended)
-
-### 3. SQLite Testing Mode - **Development Only**
-
-For testing and development purposes, you can use SQLite instead of MySQL:
+Install the Python packages:
 
 ```bash
-python scripts/setup_db.py --sqlite
+# Install from requirements.txt (excludes PyQt5 if using system packages)
+pip install bcrypt pytest
+
+# For development, you may prefer to install PyQt5 via pip:
+pip install PyQt5==5.15.10
+# But note: pip-installed PyQt5 may not include system MySQL drivers
 ```
 
-**Note:** This creates a simplified database structure and some features may not work as expected.
+**Important:** When using pip-installed PyQt5, you may need to install system Qt5 libraries separately. Using system packages (`python3-pyqt5`) is recommended for better driver compatibility.
 
 ## Verification
 
@@ -84,8 +63,10 @@ print("Available drivers:", QSqlDatabase.drivers())
 
 Expected output with MySQL support:
 ```
-Available drivers: ['QSQLITE', 'QODBC', 'QODBC3', 'QMYSQL', 'QPSQL', 'QPSQL7']
+Available drivers: ['QSQLITE', 'QMYSQL', 'QMYSQL3', 'QPSQL', ...]
 ```
+
+You should see `QMYSQL` or `QMYSQL3` in the list.
 
 ### Test Database Connection
 
@@ -103,7 +84,12 @@ Available drivers: ['QSQLITE', 'QODBC', 'QODBC3', 'QMYSQL', 'QPSQL', 'QPSQL7']
    SA_DB_NAME=the_studentr
    ```
 
-3. **Run the setup script:**
+3. **Run the verification script:**
+   ```bash
+   PYTHONPATH=. python scripts/verify_setup.py
+   ```
+
+4. **Run the setup script:**
    ```bash
    PYTHONPATH=. python scripts/setup_db.py
    ```
@@ -114,18 +100,19 @@ Available drivers: ['QSQLITE', 'QODBC', 'QODBC3', 'QMYSQL', 'QPSQL', 'QPSQL7']
 
 #### "No MySQL drivers found"
 ```
-✗ No MySQL drivers found
-Available Qt SQL drivers: ['QSQLITE', 'QODBC', 'QODBC3', 'QPSQL', 'QPSQL7']
+❌ No MySQL drivers found
+Available drivers: ['QSQLITE', 'QPSQL', ...]
 ```
 
-**Solution:** Install the native MySQL driver (libqt5sql5-mysql) or MySQL ODBC driver.
+**Solution:** Install the Qt5 MySQL driver:
+```bash
+# Ubuntu/Debian
+sudo apt-get install libqt5sql5-mysql python3-pyqt5
 
-#### "Can't open lib 'MySQL ODBC 8.0 Unicode Driver'"
+# If using pip-installed PyQt5, try switching to system packages
+pip uninstall PyQt5 PyQt5-Qt5 PyQt5-sip
+sudo apt-get install python3-pyqt5
 ```
-[unixODBC][Driver Manager]Can't open lib 'MySQL ODBC 8.0 Unicode Driver' : file not found
-```
-
-**Solution:** Install the MySQL ODBC driver package (libmyodbc).
 
 #### "Access denied for user"
 ```
@@ -150,19 +137,21 @@ If you're using Docker or a containerized environment, make sure to install the 
 
 ```dockerfile
 # For Ubuntu-based containers
-RUN apt-get update && apt-get install -y libqt5sql5-mysql
-
-# Alternative: ODBC driver
-RUN apt-get update && apt-get install -y libmyodbc
+RUN apt-get update && apt-get install -y \
+    libqt5sql5-mysql \
+    python3-pyqt5 \
+    python3-pyqt5.qtsql
 ```
 
 ### CI/CD Environments
 
-For continuous integration environments, you might want to use the SQLite testing mode:
+For continuous integration environments (like GitHub Actions), install the system packages:
 
-```bash
-# In your CI script
-PYTHONPATH=. python scripts/setup_db.py --sqlite
+```yaml
+- name: Install Qt5 MySQL dependencies
+  run: |
+    sudo apt-get update
+    sudo apt-get install -y libqt5sql5-mysql python3-pyqt5 python3-pyqt5.qtsql
 ```
 
 ## Migration Notes
@@ -173,14 +162,15 @@ If you're upgrading from the MySQLdb version:
 2. Parameter placeholders changed from `%s` to `?` (handled automatically)
 3. Error handling maintains MySQLdb compatibility
 4. Connection management is now handled by PyQt
+5. **Simplified:** Only MySQL is supported (no ODBC/SQLite fallbacks)
 
 ## Support
 
 If you encounter issues:
 
-1. Check that PyQt5 is properly installed: `pip install PyQt5==5.15.10`
+1. Check that PyQt5 is properly installed (preferably system packages)
 2. Verify MySQL drivers are available using the verification steps above
-3. Try the SQLite testing mode for development: `--sqlite`
+3. Ensure MySQL server is running and accessible
 4. Check the application logs for detailed error messages
 
 For more information, see the [MIGRATION_NOTES.md](MIGRATION_NOTES.md) file.

@@ -1,8 +1,0 @@
-bcrypt~=4.1
-pytest~=7.4.4
-
-# For MySQL database support, also install system packages:
-# Ubuntu/Debian: sudo apt-get install libqt5sql5-mysql python3-pyqt5
-# CentOS/RHEL: sudo yum install qt5-qtbase-mysql
-# macOS: brew install qt@5
-# Windows: Install Qt5 with MySQL support
