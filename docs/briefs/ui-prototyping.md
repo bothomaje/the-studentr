@@ -176,6 +176,8 @@ Loading, empty, error states are present and readable.
 ### 4. Assets
 Logo and icons load via Qt resources (no file-path assumptions).
 
-### 5. Build & CI Workflow compiles .ui/.qrc, runs UI tests (or passes with none), and produces built app
+### 5. Build & CI
+Workflow compiles .ui/.qrc, runs UI tests (or passes with none), and produces built app
 
-### 6. Docs Wireframes, flows, and a short style guide are in docs/ui/; README explains “regenerate UI” and “run the prototype”.
+### 6. Docs
+Wireframes, flows, and a short style guide are in docs/ui/; README explains “regenerate UI” and “run the prototype”.
