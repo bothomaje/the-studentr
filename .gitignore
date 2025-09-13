@@ -13,3 +13,6 @@ __pycache__/
 
 # Local-only
 db/local_*.sql
+
+# Migration test script (temporary)
+test_qsql_migration.py

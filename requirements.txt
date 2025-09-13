@@ -1,4 +1,8 @@
-mysqlclient~=2.2
 PyQt5~=5.15.10
 bcrypt~=4.1
 pytest~=7.4.4
+
+# Note: For production use with MySQL, you will need one of the following:
+# 1. PyQt5 compiled with MySQL support (QMYSQL driver)
+# 2. MySQL ODBC driver installed on the system
+# 3. Alternative: Use mysqlclient with a MySQLdb compatibility layer
