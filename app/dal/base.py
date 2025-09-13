@@ -85,11 +85,39 @@ def connect(autocommit: bool = True) -> QSqlDatabase:
         db = QSqlDatabase.addDatabase("QSQLITE", connection_name)
         db.setDatabaseName(":memory:")  # In-memory SQLite database
     else:
-        raise RuntimeError("No suitable SQL drivers available. Need QMYSQL, QODBC, or QSQLITE.")
+        raise RuntimeError(
+            "No suitable SQL drivers available. Please install MySQL drivers.\n"
+            "Ubuntu/Debian: sudo apt-get install libqt5sql5-mysql\n"
+            "CentOS/RHEL: sudo yum install qt5-qtbase-mysql\n"
+            "Or install MySQL ODBC driver:\n"
+            "Ubuntu/Debian: sudo apt-get install libmyodbc"
+        )
     
     if not db.open():
         error = db.lastError()
-        raise RuntimeError(f"Failed to connect to database: {error.text()}")
+        error_msg = f"Failed to connect to database: {error.text()}"
+        
+        # Provide helpful error messages for common issues
+        if "Can't open lib" in error.text() and "MySQL ODBC" in error.text():
+            error_msg += (
+                "\n\nThis error indicates that the MySQL ODBC driver is not installed.\n"
+                "Please install it using:\n"
+                "Ubuntu/Debian: sudo apt-get install libmyodbc\n"
+                "CentOS/RHEL: sudo yum install mysql-connector-odbc\n"
+                "Or install the native MySQL driver:\n"
+                "Ubuntu/Debian: sudo apt-get install libqt5sql5-mysql"
+            )
+        elif "Access denied" in error.text():
+            error_msg += (
+                "\n\nThis error indicates incorrect database credentials.\n"
+                "Please check your .env file settings:\n"
+                f"SA_DB_HOST={cfg.host}\n"
+                f"SA_DB_PORT={cfg.port}\n"
+                f"SA_DB_USER={cfg.user}\n"
+                "SA_DB_PASS=<your_password>"
+            )
+        
+        raise RuntimeError(error_msg)
     
     # Set autocommit mode (for MySQL)
     query = QSqlQuery(db)
