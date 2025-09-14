@@ -163,7 +163,7 @@ No business-logic changes are expected—UI should call the existing DAL.
 
 ## Acceptance criteria (UI phase)
 ### 1. Navigation
-From a single entry point, a user can switch between all major screens via the stacked widget.
+From a single entry point, a user can switch between all majorscreens via the stacked widget.
 
 ### 2. Data surfaces
 - Dashboard shows modules with computed marks and admission checks.

@@ -575,7 +575,7 @@ jobs:
 
       - name: Configure Qt plugin paths
         run: |
-          # Find Qt5 plugin directory with MySQL support  
+          # Find Qt5 plugin directory with MySQL support
           QT5_PLUGIN_PATH="/usr/lib/x86_64-linux-gnu/qt5/plugins"
           if [ -f "$QT5_PLUGIN_PATH/sqldrivers/libqsqlmysql.so" ]; then
             echo "QT_PLUGIN_PATH=$QT5_PLUGIN_PATH" >> $GITHUB_ENV
@@ -595,18 +595,18 @@ jobs:
           export DISPLAY=:99
           Xvfb :99 -screen 0 1024x768x24 &
           sleep 2
-          
+
           python3 -c "
           import os
           from PyQt5.QtCore import QCoreApplication
           from PyQt5.QtSql import QSqlDatabase
-          
+
           # Create QApplication to initialize Qt properly
           app = QCoreApplication([])
-          
+
           print('Qt version:', app.applicationVersion() if hasattr(app, 'applicationVersion') else 'Unknown')
           print('Library paths:', app.libraryPaths())
-          
+
           drivers = QSqlDatabase.drivers()
           print('Available SQL drivers:', drivers)
           mysql_drivers = [d for d in drivers if 'MYSQL' in d.upper()]
@@ -617,7 +617,7 @@ jobs:
               print('Available drivers:', drivers)
               exit(1)
           "
-          
+
           # Clean up virtual display
           pkill Xvfb || true
 
