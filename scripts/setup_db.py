@@ -134,7 +134,11 @@ def main():
     
     tables = []
     while query.next():
-        tables.append(query.value(0))
+        table_name = query.value(0)
+        # Convert QByteArray to string if necessary (for system Qt compatibility)
+        if hasattr(table_name, 'data'):
+            table_name = table_name.data().decode('utf-8')
+        tables.append(str(table_name))
     
     print("Tables: ", ", ".join(tables))
     for t in ("users", "modules", "assignments", "marks"):

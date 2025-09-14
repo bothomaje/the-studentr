@@ -563,14 +563,63 @@ jobs:
           cache: 'pip'
           cache-dependency-path: 'requirements.txt'
 
-      - name: Install MySQL and Qt5 dependencies
+      - name: Install system deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y libqt5sql5-mysql python3-pyqt5 python3-pyqt5.qtsql
+          sudo apt-get install -y libqt5sql5-mysql libmysqlclient-dev xvfb
 
       - name: Install python deps
         run: |
+          # Install all dependencies including PyQt5
           pip install -r requirements.txt
+
+      - name: Configure Qt plugin paths
+        run: |
+          # Find Qt5 plugin directory with MySQL support  
+          QT5_PLUGIN_PATH="/usr/lib/x86_64-linux-gnu/qt5/plugins"
+          if [ -f "$QT5_PLUGIN_PATH/sqldrivers/libqsqlmysql.so" ]; then
+            echo "QT_PLUGIN_PATH=$QT5_PLUGIN_PATH" >> $GITHUB_ENV
+            echo "Found Qt5 MySQL plugin at: $QT5_PLUGIN_PATH/sqldrivers/libqsqlmysql.so"
+            # List available SQL drivers
+            ls -la "$QT5_PLUGIN_PATH/sqldrivers/"
+          else
+            echo "Qt5 MySQL plugin not found at expected location"
+            # Search for alternative locations
+            find /usr -name "libqsqlmysql.so" -type f 2>/dev/null | head -5
+            exit 1
+          fi
+
+      - name: Verify PyQt5 MySQL drivers
+        run: |
+          # Use virtual display for Qt applications
+          export DISPLAY=:99
+          Xvfb :99 -screen 0 1024x768x24 &
+          sleep 2
+          
+          python3 -c "
+          import os
+          from PyQt5.QtCore import QCoreApplication
+          from PyQt5.QtSql import QSqlDatabase
+          
+          # Create QApplication to initialize Qt properly
+          app = QCoreApplication([])
+          
+          print('Qt version:', app.applicationVersion() if hasattr(app, 'applicationVersion') else 'Unknown')
+          print('Library paths:', app.libraryPaths())
+          
+          drivers = QSqlDatabase.drivers()
+          print('Available SQL drivers:', drivers)
+          mysql_drivers = [d for d in drivers if 'MYSQL' in d.upper()]
+          if mysql_drivers:
+              print('✓ MySQL drivers found:', mysql_drivers)
+          else:
+              print('✗ No MySQL drivers found')
+              print('Available drivers:', drivers)
+              exit(1)
+          "
+          
+          # Clean up virtual display
+          pkill Xvfb || true
 
       - name: Setup DB
         run: |
