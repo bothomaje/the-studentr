@@ -1,5 +1,4 @@
 PyQt5~=5.15.10
-PyQt5~=5.15.10
 bcrypt~=4.1
 pytest~=7.4.4
 
