@@ -575,7 +575,7 @@ jobs:
 
       - name: Configure Qt plugin paths
         run: |
-          # Find Qt5 plugin directory with MySQL support
+          # Find Qt5 plugin directory with MySQL support  
           QT5_PLUGIN_PATH="/usr/lib/x86_64-linux-gnu/qt5/plugins"
           if [ -f "$QT5_PLUGIN_PATH/sqldrivers/libqsqlmysql.so" ]; then
             echo "QT_PLUGIN_PATH=$QT5_PLUGIN_PATH" >> $GITHUB_ENV
