@@ -9,3 +9,6 @@ __pycache__
 **/icons/
 
 the_studentr.db
+
+app/views/gen/*.py
+!app/views/gen/__init__.py
