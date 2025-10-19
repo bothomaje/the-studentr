@@ -1,8 +1,8 @@
 # Planner page module
-from PyQt5.QtWidgets import QWidget, QMessageBox
-from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtSql import QSqlQuery
+from PyQt6.QtWidgets import QWidget, QMessageBox
+from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtGui import QStandardItemModel, QStandardItem
+from PyQt6.QtSql import QSqlQuery
 from ui_planner import *
 from add_edit_assignment import AddEditAssignment
 from all_assignments import AllAssignments

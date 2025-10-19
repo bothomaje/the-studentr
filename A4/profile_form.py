@@ -1,10 +1,10 @@
 # Profile page module
 import os
 import shutil
-from PyQt5.QtWidgets import QWidget, QMessageBox, QFileDialog
-from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtSql import QSqlQuery
-from PyQt5.QtGui import QPixmap, QPainter, QPainterPath
+from PyQt6.QtWidgets import QWidget, QMessageBox, QFileDialog
+from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtSql import QSqlQuery
+from PyQt6.QtGui import QPixmap, QPainter, QPainterPath
 from ui_profile import *
 
 # Profile Window class

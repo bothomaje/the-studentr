@@ -1,7 +1,7 @@
 # Login page module
-from PyQt5.QtWidgets import QWidget, QLineEdit
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtSql import QSqlQuery
+from PyQt6.QtWidgets import QWidget, QLineEdit
+from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtSql import QSqlQuery
 from ui_login import *
 
 # Login window class
