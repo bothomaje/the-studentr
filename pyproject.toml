@@ -1,0 +1,18 @@
+[project]
+name = "the-studentr"
+version = "0.1.0"
+description = "The ultimate student assignment tracking and productivity app"
+authors = [
+    {name = "Botho Maje",email = "bothomaje@gmail.com"}
+]
+license = {text = "GNU GPLv3"}
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pyqt6 (>=6.9.1,<7.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
