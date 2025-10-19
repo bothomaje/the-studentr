@@ -1,15 +1,16 @@
 [project]
 name = "the-studentr"
 version = "0.1.0"
-description = "The ultimate student assignment tracking and productivity app"
+description = "The ultimate student assignment tracking and productivity app."
 authors = [
-    {name = "Botho Maje",email = "bothomaje@gmail.com"}
+    {name = "bothomaje",email = "bothomaje@gmail.com"}
 ]
 license = {text = "GNU GPLv3"}
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.9,<3.13"
 dependencies = [
-    "pyqt5 (>=5.15.11,<6.0.0)"
+    "pyqt6 (>=6.9.1,<7.0.0)",
+    "pyqt6rc (>=0.7.1,<0.8.0)"
 ]
 
 

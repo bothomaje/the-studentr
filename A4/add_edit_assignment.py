@@ -1,7 +1,7 @@
 # Add/Edit Assignments Window Module
-from PyQt5.QtWidgets import QDialog
-from PyQt5.QtCore import QDate, QDateTime, QTime
-from PyQt5.QtSql import QSqlQuery
+from PyQt6.QtWidgets import QDialog
+from PyQt6.QtCore import QDate, QDateTime, QTime
+from PyQt6.QtSql import QSqlQuery
 from ui_add_edit_assignment import *
 
 class AddEditAssignment(QDialog):

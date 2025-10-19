@@ -1,7 +1,7 @@
 # All Assignments Module
-from PyQt5.QtWidgets import QDialog, QTableWidgetItem
-from PyQt5.QtCore import QDate
-from PyQt5.QtSql import QSqlQuery
+from PyQt6.QtWidgets import QDialog, QTableWidgetItem
+from PyQt6.QtCore import QDate
+from PyQt6.QtSql import QSqlQuery
 from ui_all_assignments import *
 
 class AllAssignments(QDialog):

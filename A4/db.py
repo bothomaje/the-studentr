@@ -1,4 +1,4 @@
-from PyQt5.QtSql import QSqlDatabase
+from PyQt6.QtSql import QSqlDatabase
 
 _CONN_NAME = 'the_studentr_app'
 
@@ -29,15 +29,15 @@ def disconnect():
 """
 
 def connect():
-    db = QSqlDatabase.addDatabase('QMYSQL')
-    db.setHostName('localhost')
-    db.setDatabaseName('the_studentr')
-    db.setUserName('root')
-    db.setPassword('mce')
+    db = QSqlDatabase.addDatabase('QSQLITE')
+    # db.setHostName('localhost')
+    db.setDatabaseName('the_studentr.db')
+    # db.setUserName('root')
+    # db.setPassword('mce')
     return db.open()
 
 def disconnect():
     db = QSqlDatabase.database()
     if db.isOpen():
         db.close()
-    QSqlDatabase.removeDatabase('the_studentr')
+    QSqlDatabase.removeDatabase(QSqlDatabase.defaultConnection)

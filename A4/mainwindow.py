@@ -1,8 +1,8 @@
 # Main window module
 # Sets up the main window and manages the loading of each form on the page
 # Manages central app functions
-import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
+import sys, os
+from PyQt6.QtWidgets import QApplication, QMainWindow, QMessageBox
 import db
 from ui_mainwindow import *
 from login import Login
@@ -96,5 +96,5 @@ if __name__ == "__main__":
         sys.exit(1)
     w = MainWindow()
     w.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
     
