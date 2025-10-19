@@ -1,0 +1,25 @@
+<RCC>
+    <qresource prefix="/img">
+        <file alias="logo.png">assets/logos/logo.png</file>
+        <file alias="logo.svg">assets/logos/logo.svg</file>
+    </qresource>
+    <qresource prefix="/icons">
+        <file alias="assessment.png">assets/icons/assessment.png</file>
+        <file alias="calender.png">assets/icons/calendar.png</file>
+        <file alias="camera-viewfinder.png">assets/icons/camera-viewfinder.png</file>
+        <file alias="check.png">assets/icons/check.png</file>
+        <file alias="cross.png">assets/icons/cross.png</file>
+        <file alias="exit.png">assets/icons/exit.png</file>
+        <file alias="fingerprint.png">assets/icons/fingerprint.png</file>
+        <file alias="home.png">assets/icons/home.png</file>
+        <file alias="list-check.png">assets/icons/list-check.png</file>
+        <file alias="pencil.png">assets/icons/pencil.png</file>
+        <file alias="plus.png">assets/icons/plus.png</file>
+        <file alias="settings.png">assets/icons/settings.png</file>
+        <file alias="stats.png">assets/icons/stats.png</file>
+        <file alias="summary-check.png">assets/icons/summary-check.png</file>
+        <file alias="trash.png">assets/icons/trash.png</file>
+        <file alias="user.png">assets/icons/user.png</file>
+        <file alias="calender-lines.svg">assets/icons/calendar-lines.svg</file>
+    </qresource>
+</RCC>
