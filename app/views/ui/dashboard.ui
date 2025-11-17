@@ -44,7 +44,7 @@
          <string/>
         </property>
         <property name="pixmap">
-         <pixmap resource="../resources/resources.qrc">:/img/logo.png</pixmap>
+         <pixmap resource="../resources/resources.qrc">:/img/logo.svg</pixmap>
         </property>
         <property name="scaledContents">
          <bool>true</bool>
@@ -93,7 +93,7 @@
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_2">
          <property name="sizeConstraint">
-          <enum>QLayout::SetMinimumSize</enum>
+          <enum>QLayout::SizeConstraint::SetMinimumSize</enum>
          </property>
          <item>
           <widget class="QLCDNumber" name="lcdClock">
@@ -141,7 +141,7 @@
            <item>
             <widget class="QListWidget" name="listUpcoming">
              <property name="editTriggers">
-              <set>QAbstractItemView::NoEditTriggers</set>
+              <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
              </property>
             </widget>
            </item>
@@ -163,7 +163,7 @@
            <item>
             <spacer name="horizontalSpacer_2">
              <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+              <enum>Qt::Orientation::Horizontal</enum>
              </property>
              <property name="sizeHint" stdset="0">
               <size>
@@ -180,7 +180,7 @@
              </property>
              <property name="icon">
               <iconset resource="../resources/resources.qrc">
-               <normaloff>:/icons/calender.png</normaloff>:/icons/calender.png</iconset>
+               <normaloff>:/icons/calendar-day.svg</normaloff>:/icons/calendar-day.svg</iconset>
              </property>
              <property name="iconSize">
               <size>
@@ -193,7 +193,7 @@
            <item>
             <spacer name="horizontalSpacer_3">
              <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+              <enum>Qt::Orientation::Horizontal</enum>
              </property>
              <property name="sizeHint" stdset="0">
               <size>
@@ -218,7 +218,7 @@
         <item>
          <spacer name="verticalSpacer_2">
           <property name="orientation">
-           <enum>Qt::Vertical</enum>
+           <enum>Qt::Orientation::Vertical</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -234,7 +234,7 @@
            <string>Here's how you did on your last assignment:</string>
           </property>
           <property name="alignment">
-           <set>Qt::AlignCenter</set>
+           <set>Qt::AlignmentFlag::AlignCenter</set>
           </property>
           <property name="wordWrap">
            <bool>true</bool>
@@ -263,7 +263,7 @@
            <string>Keep up the great work!</string>
           </property>
           <property name="alignment">
-           <set>Qt::AlignCenter</set>
+           <set>Qt::AlignmentFlag::AlignCenter</set>
           </property>
           <property name="wordWrap">
            <bool>true</bool>
@@ -273,7 +273,7 @@
         <item>
          <spacer name="verticalSpacer">
           <property name="orientation">
-           <enum>Qt::Vertical</enum>
+           <enum>Qt::Orientation::Vertical</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -302,7 +302,7 @@
              </property>
              <property name="icon">
               <iconset resource="../resources/resources.qrc">
-               <normaloff>:/icons/list-check.png</normaloff>:/icons/list-check.png</iconset>
+               <normaloff>:/icons/list-check.svg</normaloff>:/icons/list-check.svg</iconset>
              </property>
              <property name="iconSize">
               <size>
@@ -335,7 +335,7 @@
       <item>
        <spacer name="horizontalSpacer_6">
         <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+         <enum>Qt::Orientation::Horizontal</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -352,7 +352,7 @@
         </property>
         <property name="icon">
          <iconset resource="../resources/resources.qrc">
-          <normaloff>:/icons/settings.png</normaloff>:/icons/settings.png</iconset>
+          <normaloff>:/icons/settings.svg</normaloff>:/icons/settings.svg</iconset>
         </property>
         <property name="iconSize">
          <size>
@@ -365,7 +365,7 @@
       <item>
        <spacer name="horizontalSpacer_4">
         <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+         <enum>Qt::Orientation::Horizontal</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -382,7 +382,7 @@
         </property>
         <property name="icon">
          <iconset resource="../resources/resources.qrc">
-          <normaloff>:/icons/exit.png</normaloff>:/icons/exit.png</iconset>
+          <normaloff>:/icons/exit.svg</normaloff>:/icons/exit.svg</iconset>
         </property>
         <property name="iconSize">
          <size>
@@ -395,7 +395,7 @@
       <item>
        <spacer name="horizontalSpacer_5">
         <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+         <enum>Qt::Orientation::Horizontal</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
