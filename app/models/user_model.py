@@ -6,9 +6,8 @@ class UserModel(QSqlQueryModel):
     incorrect_password = pyqtSignal()
     successful_login = pyqtSignal()
 
-    def __init__(self, db):
+    def __init__(self):
         super().__init__()
-        self._db = db
         self.model = QSqlQueryModel()
     
     def authenticate_user(self, username, password):

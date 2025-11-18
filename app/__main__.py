@@ -1,17 +1,16 @@
 import sys
 from PyQt5.QtWidgets import QApplication
 from db import db
-from views.mainwindow import MainWindowView
+from views.mainwindow import MainWindow
 
-def main(db):
+def main():
     app = QApplication(sys.argv)
-    if not db:
+    if not db.connect():
         sys.exit(1)
-    window = MainWindowView(db)
+    window = MainWindow()
     window.show()
     return app.exec_()
 
 if __name__ == "__main__":
-    conn = db.connect()
-    sys.exit(main(conn))
+    sys.exit(main())
     

@@ -6,8 +6,7 @@ from .gen.login_ui import *
 # Login window class
 class LoginForm(QWidget):
     # Custom Signals
-    loginSuccessful = pyqtSignal(str)
-    # cancelLogin = pyqtSignal()
+    cancel_login = pyqtSignal()
 
     # Initialiser function (constructor)
     def __init__(self, user_model):
@@ -22,14 +21,16 @@ class LoginForm(QWidget):
         # Slot/signal connections
         self.ui.checkShowPass.stateChanged.connect(self.show_hide_password)
         self.ui.LoginButton.clicked.connect(self._login)
-        # self.ui.CancelButton.clicked.connect(self.cancelLogin.emit)
+        self.ui.CancelButton.clicked.connect(self.cancel_login.emit)
         self.model.user_not_found.connect(self._display_user_not_found)
         self.model.incorrect_password.connect(self._display_bad_pwd)
+        self.model.successful_login.connect(self.reset_login)
     
     # Set window to default state
     def reset_login(self):
         self.ui.lineUsername.clear()
         self.ui.linePassword.clear()
+        self.ui.lineUsername.setFocus()
         self.ui.checkShowPass.setChecked(False)
         self.ui.labelMismatch.setText("")
 
@@ -41,10 +42,10 @@ class LoginForm(QWidget):
             self.ui.linePassword.setEchoMode(QLineEdit.Password)
     
     def _display_user_not_found(self):
-        print("User not found...")
+        self.ui.labelMismatch.setText("User not found. Please try again.")
 
     def _display_bad_pwd(self):
-        print("Incorrect password...")
+        self.ui.labelMismatch.setText("Incorrect password. Please try again.")
 
     # Verify username and password
     def _login(self):
