@@ -6,6 +6,10 @@ __pycache__
 
 **/images/usrs/
 
-**/icons/
+A4/**/icons/
 
 the_studentr.db
+the_studentr.sqlite
+
+app/views/gen/*.py
+!app/views/gen/__init__.py

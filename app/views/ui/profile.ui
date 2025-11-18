@@ -44,7 +44,7 @@
          <string/>
         </property>
         <property name="pixmap">
-         <pixmap resource="../resources/resources.qrc">:/img/logo.png</pixmap>
+         <pixmap resource="../resources/resources.qrc">:/img/logo.svg</pixmap>
         </property>
         <property name="scaledContents">
          <bool>true</bool>
@@ -79,7 +79,7 @@
          <item>
           <spacer name="horizontalSpacer">
            <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+            <enum>Qt::Orientation::Horizontal</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -117,7 +117,7 @@
            </property>
            <property name="icon">
             <iconset resource="../resources/resources.qrc">
-             <normaloff>:/icons/home.png</normaloff>:/icons/home.png</iconset>
+             <normaloff>:/icons/home.svg</normaloff>:/icons/home.svg</iconset>
            </property>
            <property name="iconSize">
             <size>
@@ -178,12 +178,12 @@
             <item>
              <layout class="QVBoxLayout" name="verticalLayout_3">
               <property name="sizeConstraint">
-               <enum>QLayout::SetMinimumSize</enum>
+               <enum>QLayout::SizeConstraint::SetMinimumSize</enum>
               </property>
               <item>
                <spacer name="verticalSpacer">
                 <property name="orientation">
-                 <enum>Qt::Vertical</enum>
+                 <enum>Qt::Orientation::Vertical</enum>
                 </property>
                 <property name="sizeHint" stdset="0">
                  <size>
@@ -219,7 +219,7 @@
                    <string/>
                   </property>
                   <property name="pixmap">
-                   <pixmap resource="../resources/resources.qrc">:/icons/user.png</pixmap>
+                   <pixmap resource="../resources/resources.qrc">:/icons/circle-user.svg</pixmap>
                   </property>
                   <property name="scaledContents">
                    <bool>true</bool>
@@ -231,7 +231,7 @@
               <item>
                <spacer name="verticalSpacer_2">
                 <property name="orientation">
-                 <enum>Qt::Vertical</enum>
+                 <enum>Qt::Orientation::Vertical</enum>
                 </property>
                 <property name="sizeHint" stdset="0">
                  <size>
@@ -261,7 +261,7 @@
             <item row="0" column="0">
              <spacer name="horizontalSpacer_10">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -278,7 +278,7 @@
               </property>
               <property name="icon">
                <iconset resource="../resources/resources.qrc">
-                <normaloff>:/icons/camera-viewfinder.png</normaloff>:/icons/camera-viewfinder.png</iconset>
+                <normaloff>:/icons/camera.svg</normaloff>:/icons/camera.svg</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -291,7 +291,7 @@
             <item row="0" column="2">
              <spacer name="horizontalSpacer_14">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -304,7 +304,7 @@
             <item row="1" column="0">
              <spacer name="horizontalSpacer_13">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -321,12 +321,12 @@
               </property>
               <property name="icon">
                <iconset resource="../resources/resources.qrc">
-                <normaloff>:/icons/cross.png</normaloff>:/icons/cross.png</iconset>
+                <normaloff>:/icons/camera-slash.svg</normaloff>:/icons/camera-slash.svg</iconset>
               </property>
               <property name="iconSize">
                <size>
-                <width>10</width>
-                <height>10</height>
+                <width>14</width>
+                <height>14</height>
                </size>
               </property>
              </widget>
@@ -334,7 +334,7 @@
             <item row="1" column="2">
              <spacer name="horizontalSpacer_11">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -365,10 +365,10 @@
             <item row="0" column="1">
              <spacer name="horizontalSpacer_7">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeType">
-               <enum>QSizePolicy::Fixed</enum>
+               <enum>QSizePolicy::Policy::Fixed</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -388,10 +388,10 @@
             <item row="4" column="1">
              <spacer name="horizontalSpacer_9">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeType">
-               <enum>QSizePolicy::Fixed</enum>
+               <enum>QSizePolicy::Policy::Fixed</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -404,10 +404,10 @@
             <item row="1" column="1">
              <spacer name="horizontalSpacer_5">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeType">
-               <enum>QSizePolicy::Fixed</enum>
+               <enum>QSizePolicy::Policy::Fixed</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -427,10 +427,10 @@
             <item row="2" column="1">
              <spacer name="horizontalSpacer_6">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeType">
-               <enum>QSizePolicy::Fixed</enum>
+               <enum>QSizePolicy::Policy::Fixed</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -469,10 +469,10 @@
             <item row="3" column="1">
              <spacer name="horizontalSpacer_8">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeType">
-               <enum>QSizePolicy::Fixed</enum>
+               <enum>QSizePolicy::Policy::Fixed</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -499,7 +499,7 @@
             <item row="5" column="1">
              <spacer name="verticalSpacer_3">
               <property name="orientation">
-               <enum>Qt::Vertical</enum>
+               <enum>Qt::Orientation::Vertical</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -527,7 +527,7 @@
             <item>
              <spacer name="horizontalSpacer_2">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -544,7 +544,7 @@
               </property>
               <property name="icon">
                <iconset resource="../resources/resources.qrc">
-                <normaloff>:/icons/pencil.png</normaloff>:/icons/pencil.png</iconset>
+                <normaloff>:/icons/pencil.svg</normaloff>:/icons/pencil.svg</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -557,7 +557,7 @@
             <item>
              <spacer name="horizontalSpacer_4">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -574,12 +574,12 @@
               </property>
               <property name="icon">
                <iconset resource="../resources/resources.qrc">
-                <normaloff>:/icons/check.png</normaloff>:/icons/check.png</iconset>
+                <normaloff>:/icons/check-circle.svg</normaloff>:/icons/check-circle.svg</iconset>
               </property>
               <property name="iconSize">
                <size>
-                <width>10</width>
-                <height>10</height>
+                <width>14</width>
+                <height>14</height>
                </size>
               </property>
              </widget>
@@ -587,7 +587,7 @@
             <item>
              <spacer name="horizontalSpacer_12">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -604,12 +604,12 @@
               </property>
               <property name="icon">
                <iconset resource="../resources/resources.qrc">
-                <normaloff>:/icons/cross.png</normaloff>:/icons/cross.png</iconset>
+                <normaloff>:/icons/cross-circle.svg</normaloff>:/icons/cross-circle.svg</iconset>
               </property>
               <property name="iconSize">
                <size>
-                <width>10</width>
-                <height>10</height>
+                <width>14</width>
+                <height>14</height>
                </size>
               </property>
              </widget>
@@ -617,7 +617,7 @@
             <item>
              <spacer name="horizontalSpacer_3">
               <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <enum>Qt::Orientation::Horizontal</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>

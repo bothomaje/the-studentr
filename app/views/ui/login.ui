@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>649</width>
-    <height>400</height>
+    <height>440</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -56,7 +56,7 @@
          <string/>
         </property>
         <property name="pixmap">
-         <pixmap resource="../resources/resources.qrc">:/img/logo.png</pixmap>
+         <pixmap resource="../resources/resources.qrc">:/img/logo.svg</pixmap>
         </property>
         <property name="scaledContents">
          <bool>true</bool>
@@ -86,9 +86,6 @@
           <widget class="QLabel" name="labelLogin">
            <property name="text">
             <string>Login</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
            </property>
           </widget>
          </item>
@@ -128,7 +125,7 @@
            <item row="0" column="1">
             <spacer name="horizontalSpacer_2">
              <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+              <enum>Qt::Vertical</enum>
              </property>
              <property name="sizeType">
               <enum>QSizePolicy::Fixed</enum>
@@ -154,7 +151,7 @@
            <item row="1" column="1">
             <spacer name="horizontalSpacer_3">
              <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+              <enum>Qt::Vertical</enum>
              </property>
              <property name="sizeType">
               <enum>QSizePolicy::Fixed</enum>
@@ -187,9 +184,6 @@
           <widget class="QLabel" name="labelMismatch">
            <property name="text">
             <string/>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -227,7 +221,7 @@
       <item>
        <spacer name="horizontalSpacer_4">
         <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+         <enum>Qt::Vertical</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -244,7 +238,7 @@
         </property>
         <property name="icon">
          <iconset resource="../resources/resources.qrc">
-          <normaloff>:/icons/fingerprint.png</normaloff>:/icons/fingerprint.png</iconset>
+          <normaloff>:/icons/fingerprint.svg</normaloff>:/icons/fingerprint.svg</iconset>
         </property>
         <property name="iconSize">
          <size>
@@ -257,7 +251,7 @@
       <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+         <enum>Qt::Vertical</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -274,12 +268,12 @@
         </property>
         <property name="icon">
          <iconset resource="../resources/resources.qrc">
-          <normaloff>:/icons/cross.png</normaloff>:/icons/cross.png</iconset>
+          <normaloff>:/icons/cross-circle.svg</normaloff>:/icons/cross-circle.svg</iconset>
         </property>
         <property name="iconSize">
          <size>
-          <width>10</width>
-          <height>10</height>
+          <width>13</width>
+          <height>13</height>
          </size>
         </property>
        </widget>
@@ -287,7 +281,7 @@
       <item>
        <spacer name="horizontalSpacer_5">
         <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+         <enum>Qt::Vertical</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>

@@ -44,7 +44,7 @@
          <string/>
         </property>
         <property name="pixmap">
-         <pixmap resource="../resources/resources.qrc">:/img/logo.png</pixmap>
+         <pixmap resource="../resources/resources.qrc">:/img/logo.svg</pixmap>
         </property>
         <property name="scaledContents">
          <bool>true</bool>
@@ -79,7 +79,7 @@
          <item>
           <spacer name="horizontalSpacer_6">
            <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+            <enum>Qt::Orientation::Horizontal</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -117,7 +117,7 @@
            </property>
            <property name="icon">
             <iconset resource="../resources/resources.qrc">
-             <normaloff>:/icons/home.png</normaloff>:/icons/home.png</iconset>
+             <normaloff>:/icons/home.svg</normaloff>:/icons/home.svg</iconset>
            </property>
            <property name="iconSize">
             <size>
@@ -168,7 +168,7 @@
            <item>
             <spacer name="horizontalSpacer">
              <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+              <enum>Qt::Orientation::Horizontal</enum>
              </property>
              <property name="sizeHint" stdset="0">
               <size>
@@ -185,7 +185,7 @@
              </property>
              <property name="icon">
               <iconset resource="../resources/resources.qrc">
-               <normaloff>:/icons/plus.png</normaloff>:/icons/plus.png</iconset>
+               <normaloff>:/icons/plus.svg</normaloff>:/icons/plus.svg</iconset>
              </property>
              <property name="iconSize">
               <size>
@@ -198,7 +198,7 @@
            <item>
             <spacer name="horizontalSpacer_2">
              <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+              <enum>Qt::Orientation::Horizontal</enum>
              </property>
              <property name="sizeHint" stdset="0">
               <size>
@@ -215,7 +215,7 @@
              </property>
              <property name="icon">
               <iconset resource="../resources/resources.qrc">
-               <normaloff>:/icons/assessment.png</normaloff>:/icons/assessment.png</iconset>
+               <normaloff>:/icons/assessment.svg</normaloff>:/icons/assessment.svg</iconset>
              </property>
              <property name="iconSize">
               <size>
@@ -228,7 +228,7 @@
            <item>
             <spacer name="horizontalSpacer_3">
              <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+              <enum>Qt::Orientation::Horizontal</enum>
              </property>
              <property name="sizeHint" stdset="0">
               <size>
@@ -266,7 +266,7 @@
            <item>
             <widget class="QListView" name="listAssignments">
              <property name="editTriggers">
-              <set>QAbstractItemView::NoEditTriggers</set>
+              <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
              </property>
             </widget>
            </item>
@@ -285,7 +285,7 @@
               <item>
                <spacer name="horizontalSpacer_4">
                 <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
+                 <enum>Qt::Orientation::Horizontal</enum>
                 </property>
                 <property name="sizeHint" stdset="0">
                  <size>
@@ -306,8 +306,8 @@
                    <string>Edit Assignment Details</string>
                   </property>
                   <property name="icon">
-                   <iconset>
-                    <normaloff>../../A4-studentr-app-restarted/fi-br-pencil.png</normaloff>../../A4-studentr-app-restarted/fi-br-pencil.png</iconset>
+                   <iconset resource="../resources/resources.qrc">
+                    <normaloff>:/icons/pencil.svg</normaloff>:/icons/pencil.svg</iconset>
                   </property>
                   <property name="iconSize">
                    <size>
@@ -326,8 +326,8 @@
                    <string>Delete Assignment</string>
                   </property>
                   <property name="icon">
-                   <iconset>
-                    <normaloff>../../A4-studentr-app-restarted/fi-br-trash.png</normaloff>../../A4-studentr-app-restarted/fi-br-trash.png</iconset>
+                   <iconset resource="../resources/resources.qrc">
+                    <normaloff>:/icons/trash.svg</normaloff>:/icons/trash.svg</iconset>
                   </property>
                   <property name="iconSize">
                    <size>
@@ -342,7 +342,7 @@
               <item>
                <spacer name="horizontalSpacer_5">
                 <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
+                 <enum>Qt::Orientation::Horizontal</enum>
                 </property>
                 <property name="sizeHint" stdset="0">
                  <size>
