@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>649</width>
-    <height>400</height>
+    <height>440</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -87,9 +87,6 @@
            <property name="text">
             <string>Login</string>
            </property>
-           <property name="alignment">
-            <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
-           </property>
           </widget>
          </item>
         </layout>
@@ -113,7 +110,7 @@
          <item>
           <layout class="QGridLayout" name="gridLayout" rowminimumheight="25,25,25">
            <property name="sizeConstraint">
-            <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
+            <enum>QLayout::SetDefaultConstraint</enum>
            </property>
            <property name="verticalSpacing">
             <number>10</number>
@@ -128,10 +125,10 @@
            <item row="0" column="1">
             <spacer name="horizontalSpacer_2">
              <property name="orientation">
-              <enum>Qt::Orientation::Horizontal</enum>
+              <enum>Qt::Vertical</enum>
              </property>
              <property name="sizeType">
-              <enum>QSizePolicy::Policy::Fixed</enum>
+              <enum>QSizePolicy::Fixed</enum>
              </property>
              <property name="sizeHint" stdset="0">
               <size>
@@ -154,10 +151,10 @@
            <item row="1" column="1">
             <spacer name="horizontalSpacer_3">
              <property name="orientation">
-              <enum>Qt::Orientation::Horizontal</enum>
+              <enum>Qt::Vertical</enum>
              </property>
              <property name="sizeType">
-              <enum>QSizePolicy::Policy::Fixed</enum>
+              <enum>QSizePolicy::Fixed</enum>
              </property>
              <property name="sizeHint" stdset="0">
               <size>
@@ -170,7 +167,7 @@
            <item row="1" column="2">
             <widget class="QLineEdit" name="linePassword">
              <property name="echoMode">
-              <enum>QLineEdit::EchoMode::Password</enum>
+              <enum>QLineEdit::Password</enum>
              </property>
             </widget>
            </item>
@@ -188,15 +185,12 @@
            <property name="text">
             <string/>
            </property>
-           <property name="alignment">
-            <set>Qt::AlignmentFlag::AlignCenter</set>
-           </property>
           </widget>
          </item>
          <item>
           <spacer name="verticalSpacer">
            <property name="orientation">
-            <enum>Qt::Orientation::Vertical</enum>
+            <enum>Qt::Vertical</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -227,7 +221,7 @@
       <item>
        <spacer name="horizontalSpacer_4">
         <property name="orientation">
-         <enum>Qt::Orientation::Horizontal</enum>
+         <enum>Qt::Vertical</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -257,7 +251,7 @@
       <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
-         <enum>Qt::Orientation::Horizontal</enum>
+         <enum>Qt::Vertical</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -287,7 +281,7 @@
       <item>
        <spacer name="horizontalSpacer_5">
         <property name="orientation">
-         <enum>Qt::Orientation::Horizontal</enum>
+         <enum>Qt::Vertical</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
